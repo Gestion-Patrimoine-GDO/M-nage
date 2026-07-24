@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A2730">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ménagerie">
+<title>Ménagerie — le tableau d'honneur du foyer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bleu-900:#0A2730;
+  --bleu-850:#0D303B;
+  --bleu-800:#123B48;
+  --bleu-700:#1A4E5E;
+  --creme:#F4EBD8;
+  --creme-60:rgba(244,235,216,.60);
+  --creme-40:rgba(244,235,216,.50);
+  --rouge:#D2452F;
+  --laiton:#E0A83C;
+  --vert:#7FB069;
+  --trait:rgba(244,235,216,.15);
+  --r:14px;
+  --display:"Archivo Black","Archivo",system-ui,sans-serif;
+  --body:"Archivo",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bleu-900);
+  color:var(--creme);
+  font-family:var(--body);
+  font-size:15px;line-height:1.45;
+  font-variant-numeric:tabular-nums;
+  padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  overflow-x:hidden;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 14px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;letter-spacing:-.01em}
+
+/* --- bandeau --- */
+header{
+  position:sticky;top:0;z-index:20;
+  background:linear-gradient(var(--bleu-900) 76%,rgba(10,39,48,0));
+  padding-top:env(safe-area-inset-top);
+}
+.bandeau{display:flex;align-items:center;gap:10px;padding:12px 0 14px}
+.marque{display:flex;flex-direction:column;line-height:1;flex:1;min-width:0}
+.marque b{font-family:var(--display);font-size:19px;letter-spacing:-.02em}
+.marque span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--creme-40);margin-top:4px}
+.jetonjoueur{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);
+  border-radius:100px;padding:6px 12px 6px 6px;font:inherit;font-size:13px;cursor:pointer;
+}
+.jetonjoueur .pastille{width:28px;height:28px;border-radius:100px;display:grid;place-items:center;font-size:15px}
+.etatsync{width:7px;height:7px;border-radius:100px;background:var(--creme-40);flex-shrink:0}
+.etatsync.on{background:var(--vert);box-shadow:0 0 0 3px rgba(127,176,107,.18)}
+.etatsync.err{background:var(--rouge)}
+
+/* --- plaques émaillées --- */
+.plaque{
+  background:var(--bleu-850);
+  border:1px solid var(--trait);
+  border-radius:var(--r);
+  padding:16px;margin-bottom:12px;
+  box-shadow:inset 0 1px 0 rgba(244,235,216,.06);
+}
+.sourcil{
+  font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--creme-40);margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+}
+.sourcil b{font-family:var(--body);font-weight:600;letter-spacing:.06em;color:var(--creme-60)}
+
+/* --- jauge coop --- */
+.jauge{position:relative;height:34px;border-radius:8px;background:var(--bleu-900);border:1px solid var(--trait);overflow:hidden}
+.jauge i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--bleu-700),var(--vert));transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.jauge u{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 11px;text-decoration:none;font-size:12px;font-weight:600}
+.jauge.atteint i{background:linear-gradient(90deg,var(--vert),var(--laiton))}
+.recompense{margin-top:10px;font-size:13px;color:var(--creme-60)}
+.recompense b{color:var(--laiton);font-weight:600}
+
+/* --- barres joueurs --- */
+.course{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+.piste{display:flex;align-items:center;gap:9px}
+.piste .pastille{width:30px;height:30px;border-radius:100px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.piste .nom{font-size:13px;font-weight:600;width:74px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.piste .barre{flex:1;height:12px;border-radius:100px;background:var(--bleu-900);overflow:hidden}
+.piste .barre i{display:block;height:100%;border-radius:100px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.piste .pts{font-family:var(--display);font-size:16px;width:52px;text-align:right;flex-shrink:0}
+.piste .pts small{font-family:var(--body);font-size:10px;color:var(--creme-40);font-weight:500}
+
+/* --- quête --- */
+.quete{display:flex;align-items:center;gap:12px;border:1px dashed rgba(224,168,60,.45);background:rgba(224,168,60,.07)}
+.quete .ico{font-size:26px}
+.quete .txt{flex:1;min-width:0}
+.quete .txt b{display:block;font-size:14px}
+.quete .txt span{font-size:12px;color:var(--creme-60)}
+.quete .mult{font-family:var(--display);color:var(--laiton);font-size:18px}
+
+/* --- filtres --- */
+.filtres{display:flex;gap:7px;overflow-x:auto;padding:2px 14px 12px;margin:0 -14px;scrollbar-width:none}
+.filtres::-webkit-scrollbar{display:none}
+.filtres button{
+  flex-shrink:0;background:var(--bleu-850);border:1px solid var(--trait);color:var(--creme-60);
+  font:inherit;font-size:12.5px;padding:7px 13px;border-radius:100px;cursor:pointer;white-space:nowrap;
+}
+.filtres button[aria-pressed=true]{background:var(--creme);color:var(--bleu-900);border-color:var(--creme);font-weight:600}
+.filtres button .n{opacity:.5;margin-left:4px}
+
+/* --- grille de tuiles --- */
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px}
+.tuile{
+  position:relative;background:var(--bleu-850);border:1px solid var(--trait);border-radius:var(--r);
+  padding:12px 10px 10px;display:flex;flex-direction:column;gap:7px;align-items:flex-start;
+  color:var(--creme);font:inherit;text-align:left;cursor:pointer;min-height:106px;
+  transition:transform .12s,border-color .2s,background .2s;
+}
+.tuile:active{transform:scale(.955)}
+.tuile .em{font-size:25px;line-height:1}
+.tuile .lb{font-size:12.5px;line-height:1.25;font-weight:500;flex:1}
+.tuile .pt{font-family:var(--display);font-size:13px;color:var(--laiton)}
+.tuile.retard{border-color:rgba(210,69,47,.6);background:linear-gradient(var(--bleu-850),rgba(210,69,47,.09))}
+.tuile.retard .pt{color:var(--rouge)}
+.tuile .tag{
+  position:absolute;top:9px;right:9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--rouge);color:#fff;padding:2px 6px;border-radius:100px;font-weight:600;
+}
+.tuile.quete{border-color:rgba(224,168,60,.6)}
+.tuile.quete .tag{background:var(--laiton);color:var(--bleu-900)}
+
+/* --- tampon --- */
+.tampon{
+  position:fixed;inset:0;z-index:60;display:grid;place-items:center;pointer-events:none;
+  background:rgba(10,39,48,.35);
+}
+.tampon .rond{
+  width:170px;height:170px;border-radius:100px;border:5px solid var(--rouge);color:var(--rouge);
+  display:grid;place-content:center;text-align:center;background:rgba(10,39,48,.9);
+  transform:rotate(-13deg) scale(2.4);opacity:0;
+  animation:tamponner .62s cubic-bezier(.2,1.3,.35,1) forwards;
+}
+.tampon .rond b{font-family:var(--display);font-size:44px;line-height:1;display:block}
+.tampon .rond span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-top:7px;opacity:.85}
+@keyframes tamponner{
+  0%{transform:rotate(-24deg) scale(2.4);opacity:0}
+  38%{transform:rotate(-13deg) scale(.94);opacity:1}
+  52%{transform:rotate(-13deg) scale(1.02)}
+  70%{transform:rotate(-13deg) scale(1);opacity:1}
+  100%{transform:rotate(-13deg) scale(1);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .tampon .rond{animation:fondu .6s linear forwards;transform:rotate(-13deg)}
+  @keyframes fondu{0%{opacity:0}20%{opacity:1}70%{opacity:1}100%{opacity:0}}
+  .tuile:active{transform:none}
+}
+
+/* --- journal --- */
+.jour{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--creme-40);margin:18px 0 8px}
+.ligne{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--trait)}
+.ligne:first-of-type{border-top:0}
+.ligne .pastille{width:28px;height:28px;border-radius:100px;display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.ligne .info{flex:1;min-width:0}
+.ligne .info b{font-size:13.5px;font-weight:500;display:block}
+.ligne .info span{font-size:11.5px;color:var(--creme-40)}
+.ligne .gain{font-family:var(--display);font-size:14px;color:var(--laiton)}
+.ligne .sup{background:none;border:0;color:var(--creme-40);font:inherit;font-size:17px;cursor:pointer;padding:0 2px;line-height:1}
+
+/* --- podium / badges --- */
+.rang{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--trait)}
+.rang:first-of-type{border-top:0}
+.rang .pos{font-family:var(--display);font-size:15px;width:22px;color:var(--creme-40)}
+.rang.tete .pos{color:var(--laiton)}
+.rang .pastille{width:38px;height:38px;border-radius:100px;display:grid;place-items:center;font-size:19px;flex-shrink:0}
+.rang .who{flex:1;min-width:0}
+.rang .who b{display:block;font-size:15px;font-weight:600}
+.rang .who span{font-size:11.5px;color:var(--creme-40)}
+.rang .tot{font-family:var(--display);font-size:21px}
+.niveau{margin-top:6px;height:5px;border-radius:100px;background:var(--bleu-900);overflow:hidden}
+.niveau i{display:block;height:100%;background:var(--laiton)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.badge{
+  font-size:11px;padding:5px 9px;border-radius:100px;border:1px solid var(--trait);
+  background:var(--bleu-800);color:var(--creme-60);display:flex;gap:5px;align-items:center;
+}
+.badge.acquis{border-color:rgba(224,168,60,.5);color:var(--laiton);background:rgba(224,168,60,.08)}
+
+/* --- réglages --- */
+label.champ{display:block;margin-bottom:12px}
+label.champ .lb{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--creme-40);display:block;margin-bottom:6px}
+input,select,textarea{
+  width:100%;background:var(--bleu-900);border:1px solid var(--trait);color:var(--creme);
+  font:inherit;font-size:15px;padding:10px 12px;border-radius:9px;
+}
+input:focus,select:focus,textarea:focus,button:focus-visible,.tuile:focus-visible{outline:2px solid var(--laiton);outline-offset:2px}
+textarea{min-height:88px;font-size:12px;font-family:ui-monospace,monospace;resize:vertical}
+.bouton{
+  background:var(--creme);color:var(--bleu-900);border:0;border-radius:9px;font:inherit;font-weight:600;
+  padding:11px 16px;cursor:pointer;width:100%;font-size:14px;
+}
+.bouton.fant{background:transparent;color:var(--creme);border:1px solid var(--trait)}
+.bouton.danger{background:transparent;color:var(--rouge);border:1px solid rgba(210,69,47,.45)}
+.duo{display:flex;gap:8px}
+.bascule{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--trait)}
+.bascule:first-of-type{border-top:0}
+.bascule .txt b{display:block;font-size:14px;font-weight:600}
+.bascule .txt span{font-size:11.5px;color:var(--creme-40)}
+.interrupteur{position:relative;width:46px;height:27px;flex-shrink:0;border-radius:100px;background:var(--bleu-700);border:0;cursor:pointer;transition:background .2s}
+.interrupteur::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:100px;background:var(--creme-60);transition:transform .2s,background .2s}
+.interrupteur[aria-pressed=true]{background:var(--vert)}
+.interrupteur[aria-pressed=true]::after{transform:translateX(19px);background:#fff}
+.item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--trait)}
+.item:first-of-type{border-top:0}
+.item .em{font-size:19px;width:26px;text-align:center}
+.item .lb{flex:1;font-size:13.5px;min-width:0}
+.item .lb small{display:block;color:var(--creme-40);font-size:11px}
+.item .mini{background:none;border:1px solid var(--trait);color:var(--creme-60);border-radius:7px;font:inherit;font-size:11px;padding:5px 9px;cursor:pointer}
+
+/* --- avatars --- */
+.pastille{overflow:hidden}
+.pastille svg{display:block;width:100%;height:100%}
+.atelier{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:18px}
+.atelier .miroir{width:124px;height:124px;border-radius:100px;overflow:hidden;border:2px solid var(--trait);background:var(--bleu-900)}
+.atelier .miroir svg{width:100%;height:100%;display:block}
+.atelier .hasard{background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);font:inherit;font-size:13px;padding:8px 16px;border-radius:100px;cursor:pointer}
+.rayon{margin-bottom:14px}
+.rayon .sourcil{margin-bottom:7px}
+.rangee{display:flex;gap:8px;overflow-x:auto;padding:3px 16px 3px;margin:0 -16px;scrollbar-width:none}
+.rangee::-webkit-scrollbar{display:none}
+.opt{
+  flex-shrink:0;width:48px;height:48px;border-radius:100px;padding:0;cursor:pointer;overflow:hidden;
+  border:2px solid transparent;background:var(--bleu-900);
+}
+.opt svg{display:block;width:100%;height:100%}
+.opt[aria-pressed=true]{border-color:var(--laiton)}
+.opt.teinte{width:34px;height:34px;border-width:2px}
+
+/* --- modale --- */
+.voile{position:fixed;inset:0;z-index:70;background:rgba(5,20,25,.72);display:grid;place-items:end center;padding:0}
+.feuille{
+  background:var(--bleu-850);border-top:1px solid var(--trait);border-radius:18px 18px 0 0;
+  width:100%;max-width:560px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;animation:monte .25s cubic-bezier(.2,.9,.3,1)
+}
+@keyframes monte{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.feuille h3{font-size:17px;margin-bottom:14px}
+.choixjoueur{display:flex;align-items:center;gap:12px;width:100%;background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);font:inherit;padding:11px;border-radius:11px;margin-bottom:8px;cursor:pointer;text-align:left}
+.choixjoueur .pastille{width:34px;height:34px;border-radius:100px;display:grid;place-items:center;font-size:17px}
+
+/* --- onglets --- */
+nav.onglets{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:rgba(10,39,48,.93);backdrop-filter:blur(14px);border-top:1px solid var(--trait);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav.onglets div{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.onglets button{
+  background:none;border:0;color:var(--creme-40);font:inherit;font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;padding:11px 0 13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+nav.onglets button .ic{font-size:18px;line-height:1}
+nav.onglets button[aria-current=page]{color:var(--creme)}
+.vide{text-align:center;color:var(--creme-40);font-size:13.5px;padding:34px 20px;line-height:1.6}
+.note{font-size:12px;color:var(--creme-40);line-height:1.55;margin-top:8px}
+.note code{background:var(--bleu-900);padding:1px 5px;border-radius:4px;font-size:11px}
+.rubanhaut{background:rgba(210,69,47,.14);border:1px solid rgba(210,69,47,.4);color:var(--creme);font-size:12.5px;padding:10px 12px;border-radius:10px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bandeau">
+    <div class="marque">
+      <b>Ménagerie</b>
+      <span>Le tableau d'honneur du foyer</span>
+    </div>
+    <span class="etatsync" id="etatsync" title="Synchronisation"></span>
+    <button class="jetonjoueur" id="btnJoueur">
+      <span class="pastille" id="pastilleJoueur">🙂</span>
+      <span id="nomJoueur">Joueur</span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap" id="vue"></main>
+
+<nav class="onglets"><div>
+  <button data-onglet="faire" aria-current="page"><span class="ic">✋</span>Faire</button>
+  <button data-onglet="tableau"><span class="ic">🏅</span>Tableau</button>
+  <button data-onglet="journal"><span class="ic">📜</span>Journal</button>
+  <button data-onglet="reglages"><span class="ic">⚙️</span>Réglages</button>
+</div></nav>
+
+<script>
+/* ==========================================================================
+   MÉNAGERIE — jeu de tâches ménagères, fichier unique.
+   Fonctionne hors-ligne en mode local ; synchro temps réel si Firebase
+   est configuré dans Réglages. Aucune dépendance obligatoire.
+   ========================================================================== */
+
+/* ---------- 1. stockage local tolérant aux pannes ---------- */
+const memoire = {};
+const local = {
+  get(k, def){
+    try{ const v = localStorage.getItem(k); return v===null ? def : JSON.parse(v); }
+    catch(e){ return k in memoire ? memoire[k] : def; }
+  },
+  set(k, v){
+    try{ localStorage.setItem(k, JSON.stringify(v)); }
+    catch(e){ memoire[k] = v; }
+  }
+};
+
+/* ---------- 2. contenu par défaut ---------- */
+const COULEURS = ["#E0A83C","#7FB069","#D2452F","#6FA8C7","#C08BC0","#E27D5F","#8FC0A9","#B5A24A"];
+
+/* ---------- atelier d'avatars : tout est dessiné en SVG, viewBox 100×100 ----------
+   Repères : tête centrée en (50,52), rx 23 ry 26 · yeux à y 54 · bouche à y 64. */
+const PEAUX   = ["#F7D9BE","#EEBE97","#D69C6E","#B07443","#87542F","#5E3A22"];
+const TIGNASSE= ["#241A12","#4A2F1C","#8B4A22","#C98A2E","#E6D3A3","#8E8E8E","#E4E4E4","#C1504E","#4F6FA8","#6E9B6B"];
+const NOIR = "#241A12";
+
+const crete = c => `<path d="M26 52C26 22 74 22 74 52C74 39 67 33 50 33C33 33 26 39 26 52Z" fill="${c}"/>`;
+
+/* chaque coiffure : ce qui passe derrière la tête, ce qui passe devant */
+const COIFFURES = [
+  {arriere:()=>"", devant:c=>`<path d="M26 52c0-9 2-15 5-18-1 6-1 11 1 15Zm48 0c0-9-2-15-5-18 1 6 1 11-1 15Z" fill="${c}"/>`},
+  {arriere:()=>"", devant:crete},
+  {arriere:()=>"", devant:c=>`<path d="M26 52C26 22 74 22 74 52V43H26Z" fill="${c}"/>`},
+  {arriere:c=>`<ellipse cx="50" cy="38" rx="31" ry="26" fill="${c}"/>`,
+   devant:c=>crete(c)+`<circle cx="34" cy="27" r="8" fill="${c}"/><circle cx="50" cy="22" r="9" fill="${c}"/><circle cx="66" cy="27" r="8" fill="${c}"/>`},
+  {arriere:c=>`<path d="M22 44h56v38c0 4-4 6-8 4V56H30v30c-4 2-8 0-8-4Z" fill="${c}"/>`, devant:crete},
+  {arriere:c=>`<circle cx="21" cy="46" r="11" fill="${c}"/><circle cx="79" cy="46" r="11" fill="${c}"/>`, devant:crete},
+  {arriere:c=>`<circle cx="50" cy="17" r="11" fill="${c}"/>`, devant:crete},
+  {arriere:()=>"", devant:c=>crete(c)+`<path d="M43 30C45 12 55 12 57 30Z" fill="${c}"/>`}
+];
+
+const YEUX = [
+  ()=>`<circle cx="41" cy="54" r="4" fill="${NOIR}"/><circle cx="59" cy="54" r="4" fill="${NOIR}"/>
+       <circle cx="42.4" cy="52.6" r="1.3" fill="#fff"/><circle cx="60.4" cy="52.6" r="1.3" fill="#fff"/>`,
+  ()=>`<circle cx="41" cy="54" r="2.6" fill="${NOIR}"/><circle cx="59" cy="54" r="2.6" fill="${NOIR}"/>`,
+  ()=>`<g fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round">
+       <path d="M37 55q4-5 8 0"/><path d="M55 55q4-5 8 0"/></g>`,
+  ()=>`<ellipse cx="41" cy="54" rx="5" ry="5.6" fill="#fff"/><ellipse cx="59" cy="54" rx="5" ry="5.6" fill="#fff"/>
+       <circle cx="41.8" cy="54.6" r="2.8" fill="${NOIR}"/><circle cx="59.8" cy="54.6" r="2.8" fill="${NOIR}"/>`,
+  ()=>`<path d="M37 55q4-5 8 0" fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round"/>
+       <circle cx="59" cy="54" r="4" fill="${NOIR}"/><circle cx="60.4" cy="52.6" r="1.3" fill="#fff"/>`,
+  ()=>`<circle cx="41" cy="55" r="3.4" fill="${NOIR}"/><circle cx="59" cy="55" r="3.4" fill="${NOIR}"/>
+       <g fill="none" stroke="${NOIR}" stroke-width="2" stroke-linecap="round" opacity=".55">
+       <path d="M36 47q5-4 10 0"/><path d="M54 47q5-4 10 0"/></g>`
+];
+
+const BOUCHES = [
+  ()=>`<path d="M43 63q7 7 14 0" fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round"/>`,
+  ()=>`<path d="M41 62c2 10 16 10 18 0Z" fill="#8C3A34"/><path d="M42.6 62h14.8" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`,
+  ()=>`<path d="M43 67q7-6 14 0" fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round"/>`,
+  ()=>`<path d="M44 64h12" fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round"/>`,
+  ()=>`<path d="M43 62q7 8 14 0" fill="none" stroke="${NOIR}" stroke-width="2.6" stroke-linecap="round"/>
+       <path d="M47 66q3 5 6 0Z" fill="#E58A8A"/>`,
+  ()=>`<ellipse cx="50" cy="64" rx="4" ry="5" fill="#8C3A34"/>`
+];
+
+/* accessoires : « sous » passe derrière les yeux et la bouche, « sur » par-dessus tout */
+const ACCESSOIRES = [
+  {},
+  {sur:()=>`<g fill="none" stroke="${NOIR}" stroke-width="2.4"><rect x="32" y="47" width="17" height="14" rx="4.5"/>
+    <rect x="51" y="47" width="17" height="14" rx="4.5"/><path d="M49 54h2M32 51l-6-2M68 51l6-2"/></g>`},
+  {sur:()=>`<g fill="none" stroke="${NOIR}" stroke-width="2.4"><circle cx="41" cy="54" r="8"/><circle cx="59" cy="54" r="8"/>
+    <path d="M49 54h2M33 52l-7-2M67 52l7-2"/></g>`},
+  {sous:c=>`<path d="M27 50c-1 20 9 30 23 30s24-10 23-30c-2 13-9 17-23 17s-21-4-23-17Z" fill="${c}"/>`},
+  {sur:c=>`<path d="M40 60c3-3 7-3 10 1 3-4 7-4 10-1-3 5-7 5-10 1-3 4-7 4-10-1Z" fill="${c}"/>`},
+  {sur:(c,f)=>`<path d="M26 45c8-7 40-7 48 0l-2 8c-11-6-33-6-44 0Z" fill="${f}"/>
+    <path d="M74 47l9-4-3 9-4 3Z" fill="${f}"/><circle cx="40" cy="47" r="2" fill="#fff" opacity=".7"/>
+    <circle cx="52" cy="45" r="2" fill="#fff" opacity=".7"/><circle cx="63" cy="48" r="2" fill="#fff" opacity=".7"/>`},
+  {sur:(c,f)=>`<path d="M25 47c1-17 49-17 50 0Z" fill="${f}"/><path d="M50 43h29c2 6-12 9-29 8Z" fill="${f}" opacity=".75"/>`},
+  {sur:(c,f)=>`<circle cx="26" cy="62" r="3.2" fill="${f}"/><circle cx="74" cy="62" r="3.2" fill="${f}"/>`}
+];
+
+function assombrir(hex, k){
+  const n = parseInt(hex.slice(1),16);
+  const r = Math.round(((n>>16)&255)*k), v = Math.round(((n>>8)&255)*k), b = Math.round((n&255)*k);
+  return "#" + ((1<<24)+(r<<16)+(v<<8)+b).toString(16).slice(1);
+}
+function avatarAuto(graine){
+  let h = 7;
+  for(let i=0;i<String(graine).length;i++) h = (h*33 + String(graine).charCodeAt(i)) >>> 0;
+  const p = n => { h = (h*1103515245 + 12345) >>> 0; return h % n; };
+  return {peau:p(PEAUX.length), coif:p(COIFFURES.length), coifC:p(TIGNASSE.length),
+          yeux:p(YEUX.length), bouche:p(BOUCHES.length), acc:p(ACCESSOIRES.length)};
+}
+function avatarHasard(){
+  const p = n => Math.floor(Math.random()*n);
+  return {peau:p(PEAUX.length), coif:p(COIFFURES.length), coifC:p(TIGNASSE.length),
+          yeux:p(YEUX.length), bouche:p(BOUCHES.length), acc:p(ACCESSOIRES.length)};
+}
+function avatarSVG(a, couleur){
+  a = a || avatarAuto("x");
+  couleur = couleur || COULEURS[0];
+  const peau = PEAUX[a.peau % PEAUX.length];
+  const chev = TIGNASSE[a.coifC % TIGNASSE.length];
+  const coif = COIFFURES[a.coif % COIFFURES.length];
+  const acc  = ACCESSOIRES[a.acc % ACCESSOIRES.length];
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar">
+    <rect width="100" height="100" fill="${assombrir(couleur,.42)}"/>
+    ${coif.arriere(chev)}
+    <rect x="43" y="64" width="14" height="18" rx="6" fill="${assombrir(peau,.86)}"/>
+    <path d="M16 100c0-16 15-22 34-22s34 6 34 22Z" fill="${couleur}"/>
+    <path d="M40 79c3 5 17 5 20 0-3 8-17 8-20 0Z" fill="${assombrir(couleur,.8)}"/>
+    <circle cx="26" cy="56" r="5" fill="${peau}"/><circle cx="74" cy="56" r="5" fill="${peau}"/>
+    <ellipse cx="50" cy="52" rx="23" ry="26" fill="${peau}"/>
+    ${acc.sous ? acc.sous(chev, couleur) : ""}
+    ${YEUX[a.yeux % YEUX.length]()}
+    ${BOUCHES[a.bouche % BOUCHES.length]()}
+    ${coif.devant(chev)}
+    ${acc.sur ? acc.sur(chev, couleur) : ""}
+  </svg>`;
+}
+/* un joueur sans avatar en reçoit un, stable, tiré de son identifiant */
+const portrait = j => avatarSVG(j.av || avatarAuto(j.id), j.couleur);
+
+const TACHES_DEFAUT = [
+  ["Vaisselle à la main","🍽️",12,2,"Cuisine"],
+  ["Vider le lave-vaisselle","🫗",8,2,"Cuisine"],
+  ["Remplir le lave-vaisselle","🧼",6,1,"Cuisine"],
+  ["Cuisiner un repas","👨‍🍳",20,1,"Cuisine"],
+  ["Nettoyer le plan de travail","🧽",7,2,"Cuisine"],
+  ["Nettoyer le four","🔥",32,60,"Cuisine"],
+  ["Ranger les courses","🛍️",8,7,"Cuisine"],
+  ["Passer l'aspirateur","🧹",18,7,"Sols"],
+  ["Passer la serpillière","🪣",22,14,"Sols"],
+  ["Dépoussiérer","🪶",12,14,"Sols"],
+  ["Nettoyer les vitres","🪟",20,60,"Sols"],
+  ["Lancer une lessive","🧺",6,3,"Linge"],
+  ["Étendre le linge","👕",12,3,"Linge"],
+  ["Plier et ranger","🗂️",16,4,"Linge"],
+  ["Repasser","♨️",20,14,"Linge"],
+  ["Nettoyer les toilettes","🚽",26,7,"Sanitaires"],
+  ["Nettoyer la douche","🚿",24,10,"Sanitaires"],
+  ["Nettoyer le lavabo","🪞",10,7,"Sanitaires"],
+  ["Changer les serviettes","🧻",6,10,"Sanitaires"],
+  ["Sortir les poubelles","🗑️",8,3,"Logistique"],
+  ["Faire les courses","🛒",25,7,"Logistique"],
+  ["Changer les draps","🛏️",16,14,"Logistique"],
+  ["Arroser les plantes","🪴",5,5,"Logistique"],
+  ["Gérer un papier, un rendez-vous","📎",14,0,"Logistique"],
+  ["Litière ou sortie de l'animal","🐈",15,2,"Logistique"],
+  ["Coucher les enfants","🌙",20,1,"Enfants"],
+  ["Aider aux devoirs","✏️",16,1,"Enfants"],
+  ["Préparer les affaires d'école","🎒",10,1,"Enfants"]
+];
+
+const NIVEAUX = [
+  [0,"Nouveau venu"],[120,"Éponge stagiaire"],[300,"Écuyer du balai"],
+  [560,"Brigadier du bac à vaisselle"],[900,"Chevalier de la serpillière"],
+  [1400,"Capitaine du panier à linge"],[2100,"Maître de maison"],
+  [3000,"Grand intendant"],[4200,"Légende du foyer"]
+];
+
+const BADGES = [
+  {id:"debut", em:"🌱", nom:"Premier geste",   info:"Déclarer une tâche",              test:s=>s.total>=1},
+  {id:"sale",  em:"🧤", nom:"Sale boulot",     info:"5 tâches à plus de 20 points",    test:s=>s.lourdes>=5},
+  {id:"pomp",  em:"🚒", nom:"Pompier",         info:"10 tâches rattrapées en retard",  test:s=>s.retards>=10},
+  {id:"serie", em:"🔥", nom:"Régularité",      info:"7 jours d'affilée",               test:s=>s.serie>=7},
+  {id:"poly",  em:"🎛️", nom:"Touche-à-tout",   info:"10 tâches différentes",           test:s=>s.variete>=10},
+  {id:"mara",  em:"🏃", nom:"Grand ménage",    info:"5 tâches dans la même journée",   test:s=>s.recordJour>=5},
+  {id:"nuit",  em:"🦉", nom:"Nocturne",        info:"Une tâche après 22 h",            test:s=>s.nuit},
+  {id:"aube",  em:"🐓", nom:"Lève-tôt",        info:"Une tâche avant 7 h",             test:s=>s.aube}
+];
+
+function configDefaut(){
+  return {
+    joueurs:[
+      {id:"j1", nom:"Joueur 1", emoji:"🦊", couleur:COULEURS[0]},
+      {id:"j2", nom:"Joueur 2", emoji:"🦉", couleur:COULEURS[1]}
+    ],
+    taches: TACHES_DEFAUT.map((t,i)=>({
+      id:"t"+i, nom:t[0], emoji:t[1], points:t[2], frequence:t[3], categorie:t[4]
+    })),
+    modes:{competition:true, cooperatif:true, rpg:true},
+    objectif:500,
+    recompense:"Le premier au classement choisit le film du samedi.",
+    saison:Date.now(),
+    maj:Date.now()
+  };
+}
+
+/* ---------- 3. état ---------- */
+let cfg = local.get("men.cfg", null) || configDefaut();
+let entrees = local.get("men.entrees", []);
+let moi = local.get("men.moi", null);
+let onglet = "faire";
+let filtre = "Tout";
+let sync = local.get("men.sync", {actif:false, code:"", firebase:""});
+
+/* ---------- 4. calculs ---------- */
+const JOUR = 86400000;
+function debutSemaine(d){
+  const x = new Date(d===undefined ? Date.now() : d);
+  x.setDate(x.getDate() - ((x.getDay()+6)%7));
+  x.setHours(0,0,0,0);
+  return x.getTime();
+}
+function debutJour(t){ const x=new Date(t); x.setHours(0,0,0,0); return x.getTime(); }
+function joueur(id){ return cfg.joueurs.find(j=>j.id===id) || {nom:"Inconnu", emoji:"👻", couleur:"#888"}; }
+function tache(id){ return cfg.taches.find(t=>t.id===id); }
+
+function dernierPassage(idTache){
+  let d = 0;
+  for(const e of entrees){ if(e.tacheId===idTache && e.ts>d) d = e.ts; }
+  return d || cfg.saison;
+}
+function enRetard(t){
+  if(!t.frequence) return false;
+  return Date.now() - dernierPassage(t.id) > t.frequence * JOUR;
+}
+function retardJours(t){
+  if(!t.frequence) return 0;
+  return Math.floor((Date.now() - dernierPassage(t.id))/JOUR) - t.frequence;
+}
+/* quête du jour : tirage déterministe sur la date + le code du foyer */
+function queteDuJour(){
+  if(!cfg.modes.rpg || !cfg.taches.length) return null;
+  const graine = new Date().toDateString() + (sync.code||"foyer");
+  let h = 0;
+  for(let i=0;i<graine.length;i++) h = (h*31 + graine.charCodeAt(i)) >>> 0;
+  return cfg.taches[h % cfg.taches.length];
+}
+function calculPoints(t){
+  const retard = enRetard(t);
+  const q = queteDuJour();
+  const estQuete = q && q.id===t.id;
+  let mult = 1;
+  if(retard) mult *= 1.5;
+  if(estQuete) mult *= 2;
+  return {base:t.points, mult, points:Math.round(t.points*mult), retard, quete:!!estQuete};
+}
+
+function totaux(depuis){
+  const m = {};
+  for(const j of cfg.joueurs) m[j.id] = 0;
+  for(const e of entrees){ if(e.ts>=depuis && e.joueurId in m) m[e.joueurId] += e.points; }
+  return m;
+}
+function statsJoueur(id){
+  const mien = entrees.filter(e=>e.joueurId===id).sort((a,b)=>a.ts-b.ts);
+  const s = {total:mien.length, lourdes:0, retards:0, variete:0, recordJour:0, nuit:false, aube:false, serie:0, xp:0};
+  const types = new Set(), parJour = {};
+  for(const e of mien){
+    s.xp += e.points;
+    if(e.base>=20) s.lourdes++;
+    if(e.retard) s.retards++;
+    types.add(e.tacheId);
+    const h = new Date(e.ts).getHours();
+    if(h>=22) s.nuit = true;
+    if(h<7) s.aube = true;
+    const d = debutJour(e.ts);
+    parJour[d] = (parJour[d]||0)+1;
+  }
+  s.variete = types.size;
+  s.recordJour = Math.max(0, ...Object.values(parJour));
+  /* série de jours consécutifs se terminant aujourd'hui ou hier */
+  const jours = Object.keys(parJour).map(Number).sort((a,b)=>b-a);
+  if(jours.length){
+    const auj = debutJour(Date.now());
+    if(jours[0]===auj || jours[0]===auj-JOUR){
+      s.serie = 1;
+      for(let i=1;i<jours.length;i++){
+        if(jours[i-1]-jours[i]===JOUR) s.serie++; else break;
+      }
+    }
+  }
+  return s;
+}
+function niveau(xp){
+  let i = 0;
+  while(i+1 < NIVEAUX.length && xp >= NIVEAUX[i+1][0]) i++;
+  const bas = NIVEAUX[i][0];
+  const haut = i+1 < NIVEAUX.length ? NIVEAUX[i+1][0] : bas;
+  const part = haut>bas ? (xp-bas)/(haut-bas) : 1;
+  return {rang:i+1, titre:NIVEAUX[i][1], part, restant:Math.max(0,haut-xp), dernier:i+1===NIVEAUX.length};
+}
+
+/* ---------- 5. persistance + synchro ---------- */
+let cloud = null;              /* { db, docFoyer, colEntrees, methodes } */
+
+function sauverLocal(){
+  local.set("men.cfg", cfg);
+  local.set("men.entrees", entrees.slice(-800));
+}
+
+async function ecrireConfig(){
+  cfg.maj = Date.now();
+  sauverLocal();
+  if(cloud){
+    try{ await cloud.setDoc(cloud.docFoyer, cfg, {merge:false}); }
+    catch(e){ etatSync("err", e.message); }
+  }
+  rendre();
+}
+
+async function ajouterEntree(e){
+  if(cloud){
+    try{ await cloud.addDoc(cloud.colEntrees, e); }
+    catch(err){ etatSync("err", err.message); }
+  }else{
+    e.id = "e"+Date.now()+Math.random().toString(36).slice(2,6);
+    entrees.push(e);
+    sauverLocal();
+  }
+  rendre();
+}
+
+async function supprimerEntree(id){
+  if(cloud){
+    try{ await cloud.deleteDoc(cloud.doc(cloud.colEntrees, id)); }
+    catch(err){ etatSync("err", err.message); }
+  }else{
+    entrees = entrees.filter(x=>x.id!==id);
+    sauverLocal();
+  }
+  rendre();
+}
+
+function etatSync(etat, msg){
+  const el = document.getElementById("etatsync");
+  el.className = "etatsync" + (etat==="on" ? " on" : etat==="err" ? " err" : "");
+  el.title = msg || (etat==="on" ? "Synchronisé" : "Mode local");
+  if(etat==="err") console.warn("Synchro :", msg);
+}
+
+async function brancherSync(){
+  if(!sync.actif || !sync.code || !sync.firebase){ etatSync("off"); return; }
+  let conf;
+  try{ conf = JSON.parse(sync.firebase); }
+  catch(e){ etatSync("err","Configuration Firebase illisible"); return; }
+  try{
+    const v = "https://www.gstatic.com/firebasejs/10.12.5/";
+    const [app, auth, fs] = await Promise.all([
+      import(v+"firebase-app.js"),
+      import(v+"firebase-auth.js"),
+      import(v+"firebase-firestore.js")
+    ]);
+    const a = app.initializeApp(conf);
+    const at = auth.getAuth(a);
+    await auth.signInAnonymously(at);
+    let db;
+    try{
+      db = fs.initializeFirestore(a, {localCache: fs.persistentLocalCache()});
+    }catch(e){ db = fs.getFirestore(a); }
+
+    const docFoyer = fs.doc(db, "foyers", sync.code);
+    const colEntrees = fs.collection(db, "foyers", sync.code, "entrees");
+    cloud = {db, docFoyer, colEntrees, setDoc:fs.setDoc, addDoc:fs.addDoc,
+             deleteDoc:fs.deleteDoc, doc:fs.doc};
+
+    const instant = await fs.getDoc(docFoyer);
+    if(!instant.exists()) await fs.setDoc(docFoyer, cfg);
+
+    fs.onSnapshot(docFoyer, s=>{
+      if(s.exists()){ cfg = Object.assign(configDefaut(), s.data()); sauverLocal(); rendre(); }
+    }, e=>etatSync("err", e.message));
+
+    fs.onSnapshot(fs.query(colEntrees, fs.orderBy("ts","desc"), fs.limit(600)), s=>{
+      entrees = s.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.ts-b.ts);
+      sauverLocal();
+      rendre();
+    }, e=>etatSync("err", e.message));
+
+    etatSync("on","Foyer « "+sync.code+" » synchronisé");
+  }catch(e){
+    etatSync("err", e.message);
+  }
+}
+
+/* ---------- 6. rendu ---------- */
+const vue = document.getElementById("vue");
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function rendre(){
+  const j = moi ? joueur(moi) : null;
+  document.getElementById("pastilleJoueur").innerHTML = j ? portrait(j) : "🙂";
+  document.getElementById("nomJoueur").textContent = j ? j.nom : "Choisir";
+  document.querySelectorAll("nav.onglets button").forEach(b=>{
+    b.setAttribute("aria-current", b.dataset.onglet===onglet ? "page" : "false");
+  });
+  vue.innerHTML = ({faire:vueFaire, tableau:vueTableau, journal:vueJournal, reglages:vueReglages})[onglet]();
+  vue.scrollTop = 0;
+}
+
+function vueFaire(){
+  let h = "";
+  const sem = debutSemaine();
+  const t = totaux(sem);
+  const somme = Object.values(t).reduce((a,b)=>a+b,0);
+
+  if(cfg.modes.cooperatif){
+    const part = Math.min(100, cfg.objectif ? somme/cfg.objectif*100 : 0);
+    const fait = somme >= cfg.objectif;
+    h += `<div class="plaque">
+      <p class="sourcil">Objectif de la semaine <b>${fait ? "Atteint" : Math.max(0,cfg.objectif-somme)+" points restants"}</b></p>
+      <div class="jauge ${fait?"atteint":""}"><i style="width:${part}%"></i>
+        <u><span>${somme} pts</span><span>${cfg.objectif}</span></u></div>
+      ${cfg.recompense ? `<p class="recompense">${fait?"Débloqué":"À la clé"} : <b>${esc(cfg.recompense)}</b></p>` : ""}
+    </div>`;
+  }
+
+  if(cfg.modes.competition && cfg.joueurs.length>1){
+    const max = Math.max(1, ...Object.values(t));
+    h += `<div class="plaque"><p class="sourcil">Course de la semaine</p><div class="course">` +
+      cfg.joueurs.map(j=>`<div class="piste">
+        <span class="pastille">${portrait(j)}</span>
+        <span class="nom">${esc(j.nom)}</span>
+        <span class="barre"><i style="width:${t[j.id]/max*100}%;background:${j.couleur}"></i></span>
+        <span class="pts">${t[j.id]}<small> pts</small></span>
+      </div>`).join("") + `</div></div>`;
+  }
+
+  const q = queteDuJour();
+  if(q){
+    h += `<div class="plaque quete">
+      <span class="ico">${q.emoji}</span>
+      <span class="txt"><b>Quête du jour : ${esc(q.nom)}</b><span>Points doublés jusqu'à minuit</span></span>
+      <span class="mult">×2</span>
+    </div>`;
+  }
+
+  if(!moi){
+    h += `<div class="rubanhaut">Choisis qui tu es en haut à droite avant de déclarer une tâche.</div>`;
+  }
+
+  const cats = ["Tout", ...new Set(cfg.taches.map(t=>t.categorie))];
+  const nbRetard = cfg.taches.filter(enRetard).length;
+  h += `<div class="filtres">` +
+    cats.map(c=>`<button data-filtre="${esc(c)}" aria-pressed="${filtre===c}">${esc(c)}</button>`).join("") +
+    (nbRetard ? `<button data-filtre="Retard" aria-pressed="${filtre==="Retard"}">En retard<span class="n">${nbRetard}</span></button>` : "") +
+    `</div>`;
+
+  let liste = cfg.taches.filter(t =>
+    filtre==="Tout" ? true : filtre==="Retard" ? enRetard(t) : t.categorie===filtre);
+  liste = liste.map(t=>({t, c:calculPoints(t)}))
+               .sort((a,b)=> (b.c.retard?1:0)-(a.c.retard?1:0) || (b.c.quete?1:0)-(a.c.quete?1:0));
+
+  h += `<div class="grille">` + liste.map(({t,c})=>`
+    <button class="tuile ${c.retard?"retard":""} ${c.quete?"quete":""}" data-tache="${t.id}">
+      ${c.retard ? `<span class="tag">+${retardJours(t)} j</span>` : c.quete ? `<span class="tag">quête</span>` : ""}
+      <span class="em">${t.emoji}</span>
+      <span class="lb">${esc(t.nom)}</span>
+      <span class="pt">+${c.points}</span>
+    </button>`).join("") + `</div>`;
+
+  if(!liste.length) h += `<p class="vide">Rien dans cette catégorie.<br>Ajoute des tâches dans Réglages.</p>`;
+
+  const derniere = entrees[entrees.length-1];
+  if(derniere && Date.now()-derniere.ts < 900000){
+    h += `<div class="plaque" style="margin-top:12px">
+      <div class="ligne"><span class="pastille" style="background:${joueur(derniere.joueurId).couleur}33">${derniere.emoji}</span>
+      <span class="info"><b>${esc(derniere.tacheNom)}</b><span>${esc(joueur(derniere.joueurId).nom)}, il y a ${Math.max(1,Math.round((Date.now()-derniere.ts)/60000))} min</span></span>
+      <span class="gain">+${derniere.points}</span>
+      <button class="mini" data-annuler="${derniere.id}">Annuler</button></div>
+    </div>`;
+  }
+  return h;
+}
+
+function vueTableau(){
+  const sem = totaux(debutSemaine());
+  const sai = totaux(cfg.saison);
+  const classe = [...cfg.joueurs].sort((a,b)=>sem[b.id]-sem[a.id]);
+  let h = `<div class="plaque"><p class="sourcil">Semaine en cours <b>${new Date(debutSemaine()).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} → aujourd'hui</b></p>`;
+  h += classe.map((j,i)=>{
+    const st = statsJoueur(j.id), nv = niveau(sai[j.id]);
+    return `<div class="rang ${i===0&&sem[j.id]>0?"tete":""}">
+      <span class="pos">${i+1}</span>
+      <span class="pastille">${portrait(j)}</span>
+      <span class="who"><b>${esc(j.nom)}</b>
+        <span>${cfg.modes.rpg ? "Niveau "+nv.rang+" · "+esc(nv.titre) : sai[j.id]+" pts sur la saison"}${st.serie>1?" · série de "+st.serie+" j":""}</span>
+        ${cfg.modes.rpg ? `<span class="niveau"><i style="width:${nv.part*100}%"></i></span>` : ""}
+      </span>
+      <span class="tot">${sem[j.id]}</span>
+    </div>`;
+  }).join("") + `</div>`;
+
+  h += `<div class="plaque"><p class="sourcil">Saison <b>depuis le ${new Date(cfg.saison).toLocaleDateString("fr-FR")}</b></p>` +
+    [...cfg.joueurs].sort((a,b)=>sai[b.id]-sai[a.id]).map(j=>{
+      const st = statsJoueur(j.id);
+      return `<div class="rang"><span class="pos"></span>
+        <span class="pastille">${portrait(j)}</span>
+        <span class="who"><b>${esc(j.nom)}</b><span>${st.total} tâche${st.total>1?"s":""} · ${st.retards} rattrapage${st.retards>1?"s":""}</span></span>
+        <span class="tot">${sai[j.id]}</span></div>`;
+    }).join("") + `</div>`;
+
+  if(cfg.modes.rpg && moi){
+    const st = statsJoueur(moi);
+    h += `<div class="plaque"><p class="sourcil">Tes distinctions</p><div class="badges">` +
+      BADGES.map(b=>`<span class="badge ${b.test(st)?"acquis":""}" title="${esc(b.info)}">${b.em} ${esc(b.nom)}</span>`).join("") +
+      `</div><p class="note">Les distinctions grises se débloquent en continuant : ${esc(BADGES.filter(b=>!b.test(st))[0]?.info || "tout est acquis, chapeau")}.</p></div>`;
+  }
+
+  const oublis = cfg.taches.filter(enRetard).sort((a,b)=>retardJours(b)-retardJours(a)).slice(0,5);
+  if(oublis.length){
+    h += `<div class="plaque"><p class="sourcil">Ce que la maison réclame</p>` +
+      oublis.map(t=>`<div class="item"><span class="em">${t.emoji}</span>
+        <span class="lb">${esc(t.nom)}<small>${retardJours(t)} jour${retardJours(t)>1?"s":""} de retard · vaut ${calculPoints(t).points} points</small></span></div>`).join("") +
+      `</div>`;
+  }
+  return h;
+}
+
+function vueJournal(){
+  if(!entrees.length) return `<p class="vide">Le journal est vide.<br>Déclare une première tâche dans l'onglet Faire.</p>`;
+  const parJour = {};
+  for(const e of [...entrees].reverse().slice(0,200)){
+    const d = debutJour(e.ts);
+    (parJour[d] = parJour[d] || []).push(e);
+  }
+  return Object.keys(parJour).sort((a,b)=>b-a).map(d=>{
+    const dd = Number(d), auj = debutJour(Date.now());
+    const titre = dd===auj ? "Aujourd'hui" : dd===auj-JOUR ? "Hier"
+      : new Date(dd).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+    const total = parJour[d].reduce((a,e)=>a+e.points,0);
+    return `<p class="jour">${titre} · ${total} points</p><div class="plaque">` +
+      parJour[d].map(e=>{
+        const j = joueur(e.joueurId);
+        return `<div class="ligne">
+          <span class="pastille" style="background:${j.couleur}33">${e.emoji}</span>
+          <span class="info"><b>${esc(e.tacheNom)}</b><span>${esc(j.nom)} · ${new Date(e.ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}${e.retard?" · rattrapage":""}${e.quete?" · quête":""}</span></span>
+          <span class="gain">+${e.points}</span>
+          <button class="sup" data-annuler="${e.id}" aria-label="Supprimer">×</button>
+        </div>`;
+      }).join("") + `</div>`;
+  }).join("");
+}
+
+function vueReglages(){
+  const m = cfg.modes;
+  let h = `<div class="plaque"><p class="sourcil">Modes de jeu</p>
+    ${bascule("competition","Classement","Chacun marque pour soi, remise à zéro chaque lundi.",m.competition)}
+    ${bascule("cooperatif","Objectif commun","Un total à atteindre à plusieurs, avec une récompense.",m.cooperatif)}
+    ${bascule("rpg","Niveaux et quêtes","Expérience, titres, distinctions et quête du jour.",m.rpg)}
+  </div>`;
+
+  if(m.cooperatif){
+    h += `<div class="plaque"><p class="sourcil">Objectif commun</p>
+      <label class="champ"><span class="lb">Points à atteindre par semaine</span>
+        <input type="number" min="0" step="10" id="chObjectif" value="${cfg.objectif}"></label>
+      <label class="champ"><span class="lb">Récompense</span>
+        <input type="text" id="chRecompense" value="${esc(cfg.recompense)}"></label>
+      <p class="note">Repère : environ 250 points par personne et par semaine pour un objectif exigeant mais tenable.</p>
+    </div>`;
+  }
+
+  h += `<div class="plaque"><p class="sourcil">Joueurs <b>${cfg.joueurs.length}</b></p>` +
+    cfg.joueurs.map(j=>`<div class="item">
+      <span class="pastille" style="width:32px;height:32px;border-radius:100px;flex-shrink:0">${portrait(j)}</span>
+      <span class="lb">${esc(j.nom)}<small>${statsJoueur(j.id).total} tâches déclarées</small></span>
+      <button class="mini" data-modjoueur="${j.id}">Modifier</button>
+    </div>`).join("") +
+    `<div style="margin-top:12px"><button class="bouton fant" data-modjoueur="nouveau">Ajouter un joueur</button></div></div>`;
+
+  h += `<div class="plaque"><p class="sourcil">Tâches <b>${cfg.taches.length}</b></p>` +
+    cfg.taches.map(t=>`<div class="item">
+      <span class="em">${t.emoji}</span>
+      <span class="lb">${esc(t.nom)}<small>${t.points} points · ${t.frequence ? "tous les "+t.frequence+" j" : "sans fréquence"} · ${esc(t.categorie)}</small></span>
+      <button class="mini" data-modtache="${t.id}">Modifier</button>
+    </div>`).join("") +
+    `<div style="margin-top:12px"><button class="bouton fant" data-modtache="nouvelle">Ajouter une tâche</button></div>
+     <p class="note">Une tâche en retard rapporte 1,5 fois ses points : c'est le moteur du jeu, il pousse vers ce que personne ne fait.</p></div>`;
+
+  h += `<div class="plaque"><p class="sourcil">Synchronisation <b>${cloud ? "active" : "locale"}</b></p>
+    ${bascule("sync","Partager entre appareils","Chacun son téléphone, mise à jour instantanée.",sync.actif)}
+    <label class="champ" style="margin-top:12px"><span class="lb">Nom du foyer</span>
+      <input type="text" id="chCode" value="${esc(sync.code)}" placeholder="bayle-pontrieux" autocapitalize="none"></label>
+    <label class="champ"><span class="lb">Configuration Firebase (JSON)</span>
+      <textarea id="chFirebase" spellcheck="false" placeholder='{"apiKey":"…","authDomain":"…","projectId":"…","appId":"…"}'>${esc(sync.firebase)}</textarea></label>
+    <button class="bouton" id="btnSync">Enregistrer et connecter</button>
+    <p class="note">Sans configuration, tout reste sur cet appareil. La marche à suivre pour créer le projet Firebase est dans le fichier <code>INSTALLATION.md</code>.</p>
+  </div>`;
+
+  h += `<div class="plaque"><p class="sourcil">Saison et sauvegarde</p>
+    <div class="duo" style="margin-bottom:8px">
+      <button class="bouton fant" id="btnExport">Exporter</button>
+      <button class="bouton fant" id="btnImport">Importer</button>
+    </div>
+    <button class="bouton danger" id="btnSaison">Commencer une nouvelle saison</button>
+    <p class="note">Une nouvelle saison remet les compteurs de niveau à zéro et efface le journal. Les joueurs et les tâches sont conservés.</p>
+  </div>`;
+  return h;
+}
+
+function bascule(cle, titre, info, actif){
+  return `<div class="bascule"><span class="txt"><b>${titre}</b><span>${info}</span></span>
+    <button class="interrupteur" data-bascule="${cle}" aria-pressed="${!!actif}" aria-label="${titre}"></button></div>`;
+}
+
+/* ---------- 7. modales ---------- */
+function ouvrir(html){
+  const v = document.createElement("div");
+  v.className = "voile";
+  v.innerHTML = `<div class="feuille">${html}</div>`;
+  v.addEventListener("click", ev=>{ if(ev.target===v) v.remove(); });
+  document.body.appendChild(v);
+  return v;
+}
+const fermer = () => document.querySelectorAll(".voile").forEach(v=>v.remove());
+
+function modaleJoueurs(){
+  const v = ouvrir(`<h3>Qui déclare ?</h3>` + cfg.joueurs.map(j=>
+    `<button class="choixjoueur" data-choix="${j.id}">
+      <span class="pastille">${portrait(j)}</span>
+      <span><b>${esc(j.nom)}</b></span></button>`).join(""));
+  v.querySelectorAll("[data-choix]").forEach(b=>b.onclick = ()=>{
+    moi = b.dataset.choix; local.set("men.moi", moi); fermer(); rendre();
+  });
+}
+
+function modaleJoueur(id){
+  const nouveau = id==="nouveau";
+  const base = nouveau
+    ? {id:"j"+Date.now(), nom:"", couleur:COULEURS[cfg.joueurs.length % COULEURS.length]}
+    : joueur(id);
+  let a = Object.assign({}, base.av || avatarAuto(base.id));
+  let couleur = base.couleur;
+
+  const v = ouvrir(`<h3>${nouveau?"Nouveau joueur":"Modifier "+esc(base.nom)}</h3>
+    <div id="atelier"></div>
+    <label class="champ"><span class="lb">Prénom</span>
+      <input id="mNom" value="${esc(base.nom)}" placeholder="Agathe" autocomplete="off"></label>
+    <button class="bouton" id="mOk">Enregistrer</button>
+    ${nouveau?"":`<button class="bouton danger" id="mSup" style="margin-top:8px">Retirer ce joueur</button>`}`);
+
+  const boite = v.querySelector("#atelier");
+
+  /* une rangée d'options : chaque bouton montre l'avatar tel qu'il serait */
+  function rangee(titre, cle, nb, apercu){
+    return `<div class="rayon"><p class="sourcil">${titre}</p><div class="rangee">` +
+      Array.from({length:nb}, (_,i)=>
+        `<button class="opt${apercu?"":" teinte"}" data-cle="${cle}" data-val="${i}"
+           aria-pressed="${a[cle]===i}" aria-label="${titre} ${i+1}"
+           ${apercu?"":`style="background:${cle==="peau"?PEAUX[i]:cle==="coifC"?TIGNASSE[i]:COULEURS[i]}"`}>
+          ${apercu ? avatarSVG(Object.assign({}, a, {[cle]:i}), couleur) : ""}
+        </button>`).join("") + `</div></div>`;
+  }
+
+  function dessine(){
+    boite.innerHTML = `
+      <div class="atelier">
+        <div class="miroir">${avatarSVG(a, couleur)}</div>
+        <button type="button" class="hasard" id="mHasard">🎲 Au hasard</button>
+      </div>
+      ${rangee("Teint","peau",PEAUX.length,false)}
+      ${rangee("Coiffure","coif",COIFFURES.length,true)}
+      ${rangee("Couleur de cheveux","coifC",TIGNASSE.length,false)}
+      ${rangee("Regard","yeux",YEUX.length,true)}
+      ${rangee("Bouche","bouche",BOUCHES.length,true)}
+      ${rangee("Accessoire","acc",ACCESSOIRES.length,true)}
+      <div class="rayon"><p class="sourcil">Couleur du joueur</p><div class="rangee">` +
+        COULEURS.map(c=>`<button class="opt teinte" data-couleur="${c}"
+          aria-pressed="${c===couleur}" aria-label="Couleur ${c}" style="background:${c}"></button>`).join("") +
+      `</div></div>`;
+  }
+
+  boite.addEventListener("click", e=>{
+    const o = e.target.closest("[data-cle]");
+    if(o){ a[o.dataset.cle] = +o.dataset.val; return dessine(); }
+    const c = e.target.closest("[data-couleur]");
+    if(c){ couleur = c.dataset.couleur; return dessine(); }
+    if(e.target.closest("#mHasard")){ a = avatarHasard(); return dessine(); }
+  });
+  dessine();
+
+  v.querySelector("#mOk").onclick = ()=>{
+    const champ = v.querySelector("#mNom");
+    const nom = champ.value.trim();
+    if(!nom){ champ.focus(); return; }
+    const maj = {id:base.id, nom, couleur, av:a, emoji:base.emoji || "🙂"};
+    cfg.joueurs = nouveau ? [...cfg.joueurs, maj] : cfg.joueurs.map(x=>x.id===base.id?maj:x);
+    fermer(); ecrireConfig();
+  };
+
+  const sup = v.querySelector("#mSup");
+  if(sup) sup.onclick = ()=>{
+    if(!confirm("Retirer "+base.nom+" ? Son historique reste dans le journal.")) return;
+    cfg.joueurs = cfg.joueurs.filter(x=>x.id!==base.id);
+    if(moi===base.id){ moi = null; local.set("men.moi", null); }
+    fermer(); ecrireConfig();
+  };
+}
+
+function modaleTache(id){
+  const nouvelle = id==="nouvelle";
+  const t = nouvelle
+    ? {id:"t"+Date.now(), nom:"", emoji:"✨", points:10, frequence:7, categorie:cfg.taches[0]?.categorie||"Logistique"}
+    : tache(id);
+  const cats = [...new Set([...cfg.taches.map(x=>x.categorie),"Cuisine","Sols","Linge","Sanitaires","Logistique","Enfants"])];
+  const v = ouvrir(`<h3>${nouvelle?"Nouvelle tâche":"Modifier la tâche"}</h3>
+    <label class="champ"><span class="lb">Intitulé</span><input id="mNom" value="${esc(t.nom)}" placeholder="Nettoyer le frigo"></label>
+    <div class="duo">
+      <label class="champ" style="flex:0 0 88px"><span class="lb">Emoji</span><input id="mEmoji" value="${t.emoji}"></label>
+      <label class="champ" style="flex:1"><span class="lb">Points</span><input type="number" min="1" id="mPoints" value="${t.points}"></label>
+    </div>
+    <label class="champ"><span class="lb">À refaire tous les … jours (0 = jamais)</span>
+      <input type="number" min="0" id="mFreq" value="${t.frequence}"></label>
+    <label class="champ"><span class="lb">Catégorie</span>
+      <select id="mCat">${cats.map(c=>`<option ${c===t.categorie?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
+    <button class="bouton" id="mOk">Enregistrer</button>
+    ${nouvelle?"":`<button class="bouton danger" id="mSup" style="margin-top:8px">Supprimer la tâche</button>`}
+    <p class="note">Barème conseillé : 5 à 10 points pour un geste rapide, 15 à 20 pour une vraie corvée, 25 et plus pour ce que personne ne veut faire.</p>`);
+  v.querySelector("#mOk").onclick = ()=>{
+    const nom = v.querySelector("#mNom").value.trim();
+    if(!nom) return v.querySelector("#mNom").focus();
+    const maj = {
+      id:t.id, nom,
+      emoji:v.querySelector("#mEmoji").value.trim()||"✨",
+      points:Math.max(1, +v.querySelector("#mPoints").value||1),
+      frequence:Math.max(0, +v.querySelector("#mFreq").value||0),
+      categorie:v.querySelector("#mCat").value
+    };
+    cfg.taches = nouvelle ? [...cfg.taches, maj] : cfg.taches.map(x=>x.id===t.id?maj:x);
+    fermer(); ecrireConfig();
+  };
+  const sup = v.querySelector("#mSup");
+  if(sup) sup.onclick = ()=>{
+    if(!confirm("Supprimer « "+t.nom+" » ?")) return;
+    cfg.taches = cfg.taches.filter(x=>x.id!==t.id);
+    fermer(); ecrireConfig();
+  };
+}
+
+/* ---------- 8. déclarer une tâche ---------- */
+function tamponner(points, libelle){
+  const el = document.createElement("div");
+  el.className = "tampon";
+  el.innerHTML = `<div class="rond"><b>+${points}</b><span>${esc(libelle)}</span></div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 640);
+  if(navigator.vibrate) try{ navigator.vibrate(18); }catch(e){}
+}
+
+function declarer(idTache){
+  if(!moi){ modaleJoueurs(); return; }
+  const t = tache(idTache);
+  if(!t) return;
+  const c = calculPoints(t);
+  tamponner(c.points, c.quete ? "quête du jour" : c.retard ? "rattrapage" : "validé");
+  ajouterEntree({
+    joueurId:moi, tacheId:t.id, tacheNom:t.nom, emoji:t.emoji,
+    base:t.points, points:c.points, retard:c.retard, quete:c.quete, ts:Date.now()
+  });
+}
+
+/* ---------- 9. écouteurs ---------- */
+document.getElementById("btnJoueur").onclick = modaleJoueurs;
+
+document.querySelector("nav.onglets").addEventListener("click", e=>{
+  const b = e.target.closest("[data-onglet]");
+  if(b){ onglet = b.dataset.onglet; rendre(); }
+});
+
+vue.addEventListener("click", async e=>{
+  const t = e.target.closest("[data-tache]");
+  if(t) return declarer(t.dataset.tache);
+
+  const f = e.target.closest("[data-filtre]");
+  if(f){ filtre = f.dataset.filtre; rendre(); return; }
+
+  const a = e.target.closest("[data-annuler]");
+  if(a){ if(confirm("Annuler cette déclaration ?")) supprimerEntree(a.dataset.annuler); return; }
+
+  const mj = e.target.closest("[data-modjoueur]");
+  if(mj) return modaleJoueur(mj.dataset.modjoueur);
+
+  const mt = e.target.closest("[data-modtache]");
+  if(mt) return modaleTache(mt.dataset.modtache);
+
+  const bs = e.target.closest("[data-bascule]");
+  if(bs){
+    const c = bs.dataset.bascule;
+    if(c==="sync"){
+      sync.actif = !sync.actif;
+      local.set("men.sync", sync);
+      rendre();
+      if(sync.actif) brancherSync(); else { cloud = null; etatSync("off"); }
+    }else{
+      cfg.modes[c] = !cfg.modes[c];
+      ecrireConfig();
+    }
+    return;
+  }
+
+  if(e.target.id==="btnSync"){
+    sync.code = document.getElementById("chCode").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"-");
+    sync.firebase = document.getElementById("chFirebase").value.trim();
+    sync.actif = true;
+    local.set("men.sync", sync);
+    cloud = null;
+    await brancherSync();
+    rendre();
+    return;
+  }
+
+  if(e.target.id==="btnExport"){
+    const blob = new Blob([JSON.stringify({cfg, entrees}, null, 2)], {type:"application/json"});
+    const a2 = document.createElement("a");
+    a2.href = URL.createObjectURL(blob);
+    a2.download = "menagerie-" + new Date().toISOString().slice(0,10) + ".json";
+    a2.click();
+    return;
+  }
+
+  if(e.target.id==="btnImport"){
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json";
+    inp.onchange = async ()=>{
+      try{
+        const d = JSON.parse(await inp.files[0].text());
+        if(d.cfg) cfg = Object.assign(configDefaut(), d.cfg);
+        if(Array.isArray(d.entrees)) entrees = d.entrees;
+        sauverLocal(); ecrireConfig();
+      }catch(err){ alert("Fichier illisible : " + err.message); }
+    };
+    inp.click();
+    return;
+  }
+
+  if(e.target.id==="btnSaison"){
+    if(!confirm("Nouvelle saison : le journal et les niveaux repartent de zéro. Continuer ?")) return;
+    cfg.saison = Date.now();
+    if(cloud){ alert("Le journal partagé se videra au fil des prochaines synchronisations."); }
+    entrees = [];
+    sauverLocal(); ecrireConfig();
+    return;
+  }
+});
+
+vue.addEventListener("change", e=>{
+  if(e.target.id==="chObjectif"){ cfg.objectif = Math.max(0, +e.target.value||0); ecrireConfig(); }
+  if(e.target.id==="chRecompense"){ cfg.recompense = e.target.value; ecrireConfig(); }
+});
+
+/* ---------- 10. manifeste PWA embarqué ---------- */
+(function(){
+  const icone = "data:image/svg+xml," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+      <rect width="192" height="192" rx="42" fill="#0A2730"/>
+      <circle cx="96" cy="96" r="58" fill="none" stroke="#F4EBD8" stroke-width="7"/>
+      <path d="M96 56l11 30h31l-25 19 10 31-27-19-27 19 10-31-25-19h31z" fill="#E0A83C"/>
+    </svg>`);
+  const manifeste = {
+    name:"Ménagerie", short_name:"Ménagerie", start_url:".", display:"standalone",
+    background_color:"#0A2730", theme_color:"#0A2730", orientation:"portrait",
+    icons:[{src:icone, sizes:"192x192", type:"image/svg+xml", purpose:"any"}]
+  };
+  try{
+    const l = document.createElement("link");
+    l.rel = "manifest";
+    l.href = URL.createObjectURL(new Blob([JSON.stringify(manifeste)], {type:"application/manifest+json"}));
+    document.head.appendChild(l);
+    const i = document.createElement("link");
+    i.rel = "apple-touch-icon"; i.href = icone;
+    document.head.appendChild(i);
+  }catch(e){}
+})();
+
+/* ---------- 11. démarrage ---------- */
+etatSync("off");
+rendre();
+if(sync.actif) brancherSync();
+/* la quête et les retards changent avec l'heure : rafraîchir de temps en temps */
+setInterval(()=>{ if(onglet==="faire") rendre(); }, 300000);
+</script>
+</body>
+</html>
