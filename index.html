@@ -245,10 +245,28 @@ textarea{min-height:88px;font-size:16px;font-family:ui-monospace,monospace;resiz
 /* --- modale --- */
 .voile{position:fixed;inset:0;z-index:70;background:rgba(5,20,25,.72);display:grid;place-items:end center;padding:0}
 .feuille{
+  position:relative;
   background:var(--bleu-850);border-top:1px solid var(--trait);border-radius:18px 18px 0 0;
-  width:100%;max-width:560px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh;overflow-y:auto;animation:monte .25s cubic-bezier(.2,.9,.3,1)
+  width:100%;max-width:560px;padding:0 16px calc(26px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;overscroll-behavior:contain;
+  animation:monte .25s cubic-bezier(.2,.9,.3,1)
 }
+.tetefeuille{
+  position:sticky;top:0;z-index:4;display:flex;justify-content:flex-end;align-items:center;
+  margin:0 -16px 12px;padding:9px 12px 9px;
+  background:var(--bleu-850);border-radius:18px 18px 0 0;
+  box-shadow:0 8px 12px -8px rgba(10,39,48,.9);
+}
+.poignee{
+  position:absolute;left:50%;top:11px;transform:translateX(-50%);
+  width:42px;height:4px;border-radius:4px;background:rgba(244,235,216,.24);
+}
+.fermer{
+  width:40px;height:40px;border-radius:100px;flex-shrink:0;
+  background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);
+  font-size:15px;line-height:1;cursor:pointer;display:grid;place-items:center;
+}
+.fermer:active{background:var(--bleu-700)}
 @keyframes monte{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
 .feuille h3{font-size:17px;margin-bottom:14px}
 .duojoueur{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -941,7 +959,7 @@ function modaleCreer(){
 
     const att = ouvrir(`<h3>Création en cours…</h3><p class="note">Connexion au serveur.</p>`);
     const r = await brancherSync();
-    att.remove();
+    fermer();
     rendre();
 
     if(r && r.ok){
@@ -973,7 +991,7 @@ function modaleRejoindre(){
     const att = ouvrir(`<h3>Connexion…</h3><p class="note">Recherche de la ligue.</p>`);
     rejoindreLigue(code);
     const r = await brancherSync();
-    att.remove();
+    fermer();
     rendre();
     if(r && r.ok){
       const w = ouvrir(`<h3>Te voilà dans « ${esc(cfg.nom)} »</h3>
@@ -1022,7 +1040,7 @@ function modaleEchec(r){
     <div class="rubanhaut">${esc(r ? r.message : "Erreur inconnue")}</div>
     <p class="note" style="margin-top:12px">Vérifie ta connexion internet et réessaie. Si le problème persiste,
     tu peux jouer sur cet appareil seul en attendant : les points seront conservés.</p>
-    <button class="bouton" style="margin-top:12px" onclick="this.closest('.voile').remove()">J'ai compris</button>`);
+    <button class="bouton" style="margin-top:12px" onclick="fermer()">J'ai compris</button>`);
 }
 
 function etatSync(etat, msg){
@@ -1358,15 +1376,53 @@ function bascule(cle, titre, info, actif){
 }
 
 /* ---------- 7. modales ---------- */
+/* Une entrée d'historique est empilée à l'ouverture : le bouton retour d'Android
+   referme la fenêtre au lieu de quitter le jeu. */
+let pousse = false;
+
 function ouvrir(html){
+  if(!pousse){
+    try{ history.pushState({menagerie:"fenetre"}, ""); pousse = true; }catch(e){}
+  }
   const v = document.createElement("div");
   v.className = "voile";
-  v.innerHTML = `<div class="feuille">${html}</div>`;
-  v.addEventListener("click", ev=>{ if(ev.target===v) v.remove(); });
+  v.innerHTML = `<div class="feuille">
+    <div class="tetefeuille"><span class="poignee"></span>
+      <button class="fermer" type="button" aria-label="Fermer">✕</button></div>
+    ${html}</div>`;
+  v.addEventListener("click", ev=>{
+    if(ev.target === v || ev.target.closest(".fermer")) fermer();
+  });
   document.body.appendChild(v);
+  document.body.style.overflow = "hidden";
   return v;
 }
-const fermer = () => document.querySelectorAll(".voile").forEach(v=>v.remove());
+
+function fermer(){
+  document.querySelectorAll(".voile").forEach(v => v.remove());
+  document.body.style.overflow = "";
+  /* certains parcours enchaînent une fenêtre sur l'autre : on ne dépile
+     qu'une fois certain qu'aucune autre ne s'est ouverte dans la foulée */
+  setTimeout(()=>{
+    if(!document.querySelector(".voile") && pousse){
+      pousse = false;
+      try{ history.back(); }catch(e){}
+    }
+  }, 0);
+}
+
+window.addEventListener("popstate", ()=>{
+  pousse = false;
+  if(document.querySelector(".voile")){
+    document.querySelectorAll(".voile").forEach(v => v.remove());
+    document.body.style.overflow = "";
+  }
+});
+
+/* Échap ferme aussi, pour ceux qui jouent au clavier */
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape" && document.querySelector(".voile")) fermer();
+});
 
 function modaleJoueurs(){
   const v = ouvrir(`<h3>Qui déclare ?</h3>` + cfg.joueurs.map(j=>
