@@ -50,9 +50,11 @@ header{
   padding-top:env(safe-area-inset-top);
 }
 .bandeau{display:flex;align-items:center;gap:10px;padding:12px 0 14px}
-.marque{display:flex;flex-direction:column;line-height:1;flex:1;min-width:0}
+.marque{display:flex;flex-direction:column;line-height:1;flex:1;min-width:0;background:none;border:0;color:var(--creme);font:inherit;text-align:left;padding:2px 0;cursor:pointer}
 .marque b{font-family:var(--display);font-size:19px;letter-spacing:-.02em}
-.marque span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--creme-40);margin-top:4px}
+.marque span{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--creme-40);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.marqueur{width:8px;height:8px;border-radius:100px;flex-shrink:0;background:transparent;border:1px solid var(--trait)}
+.marqueur[data-ici]{background:var(--vert);border-color:var(--vert);box-shadow:0 0 0 3px rgba(127,176,107,.2)}
 .jetonjoueur{
   display:flex;align-items:center;gap:8px;flex-shrink:0;
   background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);
@@ -290,10 +292,10 @@ nav.onglets button[aria-current=page]{color:var(--creme)}
 
 <header>
   <div class="wrap bandeau">
-    <div class="marque">
+    <button class="marque" id="btnLigue">
       <b>Ménagerie</b>
-      <span>Le tableau d'honneur du foyer</span>
-    </div>
+      <span id="nomLigue">Le tableau d'honneur du foyer</span>
+    </button>
     <span class="etatsync" id="etatsync" title="Synchronisation"></span>
     <button class="jetonjoueur" id="btnJoueur">
       <span class="pastille" id="pastilleJoueur">🙂</span>
@@ -404,6 +406,60 @@ const BOUCHES = [
 ];
 
 /* accessoires : « sous » passe derrière les yeux et la bouche, « sur » par-dessus tout */
+/* ---------- espèces : 0 = humain, puis les animaux ----------
+   Même charpente que le visage humain : oreilles derrière la tête, museau devant. */
+const paire = t => t + `<g transform="translate(100,0) scale(-1,1)">${t}</g>`;
+const ROSE = "#E9A0A8";
+
+const ANIMAUX = [
+  null,
+  { nom:"Chat",
+    oreilles:(f,c)=>paire(`<path d="M27 45L31 15L52 35Z" fill="${f}"/><path d="M33 41L35 24L45 36Z" fill="${c}"/>`),
+    nez:"triangle", moustaches:true },
+  { nom:"Chien",
+    oreilles:(f,c)=>paire(`<path d="M28 39c-10 1-14 15-11 26 2 9 11 10 14 3 3-8 2-24-3-29Z" fill="${c}"/>`),
+    nez:"truffe" },
+  { nom:"Lapin",
+    oreilles:(f,c)=>paire(`<ellipse cx="37" cy="17" rx="7.5" ry="19" transform="rotate(-13 37 17)" fill="${f}"/><ellipse cx="38" cy="18" rx="3.8" ry="13" transform="rotate(-13 38 18)" fill="${ROSE}"/>`),
+    nez:"triangle", moustaches:true },
+  { nom:"Ours",
+    oreilles:(f,c)=>paire(`<circle cx="29" cy="27" r="11" fill="${f}"/><circle cx="29" cy="27" r="6" fill="${c}"/>`),
+    nez:"truffe" },
+  { nom:"Renard",
+    oreilles:(f,c)=>paire(`<path d="M24 44L27 13L53 36Z" fill="${f}"/><path d="M31 40L33 23L44 36Z" fill="${c}"/>`),
+    nez:"triangle", moustaches:true },
+  { nom:"Souris",
+    oreilles:(f,c)=>paire(`<circle cx="26" cy="31" r="13" fill="${f}"/><circle cx="26" cy="31" r="8" fill="${ROSE}"/>`),
+    nez:"triangle", moustaches:true },
+  { nom:"Panda",
+    oreilles:()=>paire(`<circle cx="29" cy="26" r="10.5" fill="#241A12"/>`),
+    marques:()=>paire(`<ellipse cx="41" cy="53" rx="9.5" ry="11.5" transform="rotate(-14 41 53)" fill="#241A12"/>`),
+    nez:"truffe" }
+];
+
+/* museau, truffe et moustaches, communs à toutes les espèces */
+function museau(bete, clair){
+  let out = `<ellipse cx="50" cy="67" rx="15" ry="9" fill="${clair}"/>`;
+  out += bete.nez === "truffe"
+    ? `<ellipse cx="50" cy="61" rx="6.5" ry="4.8" fill="#241A12"/>`
+    : `<path d="M44 59.5h12L50 66.5Z" fill="${ROSE}"/>`;
+  if(bete.moustaches){
+    out += paire(`<g stroke="#241A12" stroke-width="1.5" stroke-linecap="round" opacity=".45" fill="none">
+      <path d="M34 65H20"/><path d="M35 70l-13 4"/></g>`);
+  }
+  return out;
+}
+
+const BOUCHES_BETE = [
+  ()=>`<path d="M50 67q-4 6-8 1M50 67q4 6 8 1" fill="none" stroke="#241A12" stroke-width="2.2" stroke-linecap="round"/>`,
+  ()=>`<path d="M41 68c3 9 15 9 18 0Z" fill="#8C3A34"/>`,
+  ()=>`<path d="M50 67q-4 6-8 1M50 67q4 6 8 1" fill="none" stroke="#241A12" stroke-width="2.2" stroke-linecap="round"/>
+       <path d="M46 71q4 7 8 0Z" fill="${ROSE}"/>`,
+  ()=>`<path d="M44 70h12" fill="none" stroke="#241A12" stroke-width="2.2" stroke-linecap="round"/>`,
+  ()=>`<ellipse cx="50" cy="71" rx="5" ry="4.2" fill="#8C3A34"/>`,
+  ()=>`<path d="M44 73q6-6 12 0" fill="none" stroke="#241A12" stroke-width="2.2" stroke-linecap="round"/>`
+];
+
 const ACCESSOIRES = [
   {},
   {sur:()=>`<g fill="none" stroke="${NOIR}" stroke-width="2.4"><rect x="32" y="47" width="17" height="14" rx="4.5"/>
@@ -419,6 +475,11 @@ const ACCESSOIRES = [
   {sur:(c,f)=>`<circle cx="26" cy="62" r="3.2" fill="${f}"/><circle cx="74" cy="62" r="3.2" fill="${f}"/>`}
 ];
 
+function eclaircir(hex, k){
+  const n = parseInt(hex.slice(1),16);
+  const m = (v)=>Math.round(v + (255-v)*k);
+  return "#" + ((1<<24) + (m((n>>16)&255)<<16) + (m((n>>8)&255)<<8) + m(n&255)).toString(16).slice(1);
+}
 function assombrir(hex, k){
   const n = parseInt(hex.slice(1),16);
   const r = Math.round(((n>>16)&255)*k), v = Math.round(((n>>8)&255)*k), b = Math.round((n&255)*k);
@@ -428,27 +489,49 @@ function avatarAuto(graine){
   let h = 7;
   for(let i=0;i<String(graine).length;i++) h = (h*33 + String(graine).charCodeAt(i)) >>> 0;
   const p = n => { h = (h*1103515245 + 12345) >>> 0; return h % n; };
-  return {peau:p(PEAUX.length), coif:p(COIFFURES.length), coifC:p(TIGNASSE.length),
+  return {animal:0, peau:p(PEAUX.length), coif:p(COIFFURES.length), coifC:p(TIGNASSE.length),
           yeux:p(YEUX.length), bouche:p(BOUCHES.length), acc:p(ACCESSOIRES.length)};
 }
 function avatarHasard(){
   const p = n => Math.floor(Math.random()*n);
-  return {peau:p(PEAUX.length), coif:p(COIFFURES.length), coifC:p(TIGNASSE.length),
-          yeux:p(YEUX.length), bouche:p(BOUCHES.length), acc:p(ACCESSOIRES.length)};
+  return {animal:p(ANIMAUX.length), peau:p(PEAUX.length), coif:p(COIFFURES.length),
+          coifC:p(TIGNASSE.length), yeux:p(YEUX.length), bouche:p(BOUCHES.length),
+          acc:p(ACCESSOIRES.length)};
 }
 function avatarSVG(a, couleur){
   a = a || avatarAuto("x");
   couleur = couleur || COULEURS[0];
-  const peau = PEAUX[a.peau % PEAUX.length];
+  const bete = ANIMAUX[(a.animal||0) % ANIMAUX.length];
   const chev = TIGNASSE[a.coifC % TIGNASSE.length];
-  const coif = COIFFURES[a.coif % COIFFURES.length];
   const acc  = ACCESSOIRES[a.acc % ACCESSOIRES.length];
+  const fond = `<rect width="100" height="100" fill="${assombrir(couleur,.42)}"/>`;
+  const buste = `<path d="M16 100c0-16 15-22 34-22s34 6 34 22Z" fill="${couleur}"/>
+    <path d="M40 79c3 5 17 5 20 0-3 8-17 8-20 0Z" fill="${assombrir(couleur,.8)}"/>`;
+
+  if(bete){
+    const poil  = chev;
+    const clair = eclaircir(poil, .42);
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar animal">
+      ${fond}
+      ${bete.oreilles(poil, clair)}
+      <rect x="43" y="64" width="14" height="18" rx="6" fill="${assombrir(poil,.86)}"/>
+      ${buste}
+      <ellipse cx="50" cy="52" rx="23.5" ry="25" fill="${poil}"/>
+      ${bete.marques ? bete.marques() : ""}
+      ${museau(bete, clair)}
+      ${YEUX[a.yeux % YEUX.length]()}
+      ${BOUCHES_BETE[a.bouche % BOUCHES_BETE.length]()}
+      ${acc.sur ? acc.sur(poil, couleur) : ""}
+    </svg>`;
+  }
+
+  const peau = PEAUX[a.peau % PEAUX.length];
+  const coif = COIFFURES[a.coif % COIFFURES.length];
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar">
-    <rect width="100" height="100" fill="${assombrir(couleur,.42)}"/>
+    ${fond}
     ${coif.arriere(chev)}
     <rect x="43" y="64" width="14" height="18" rx="6" fill="${assombrir(peau,.86)}"/>
-    <path d="M16 100c0-16 15-22 34-22s34 6 34 22Z" fill="${couleur}"/>
-    <path d="M40 79c3 5 17 5 20 0-3 8-17 8-20 0Z" fill="${assombrir(couleur,.8)}"/>
+    ${buste}
     <circle cx="26" cy="56" r="5" fill="${peau}"/><circle cx="74" cy="56" r="5" fill="${peau}"/>
     <ellipse cx="50" cy="52" rx="23" ry="26" fill="${peau}"/>
     ${acc.sous ? acc.sous(chev, couleur) : ""}
@@ -531,16 +614,61 @@ function configDefaut(){
 }
 
 /* ---------- 3. état ---------- */
-let cfg = local.get("men.cfg", null) || configDefaut();
-let entrees = local.get("men.entrees", []);
-let moi = local.get("men.moi", null);
+/* Plusieurs ligues cohabitent sur l'appareil. Chacune a sa clé, et ses données
+   sont rangées sous des clés de stockage distinctes. */
+let ligues = local.get("men.ligues", null);
+let courante = local.get("men.courante", null);
+let cfg, entrees, moi, sync = {mode:null, code:""};
 let onglet = "faire";
 let filtre = "Tout";
-let sync = local.get("men.sync", {mode:null, code:""});
-if("actif" in sync){   /* migration depuis l'ancienne version */
-  sync = {mode: (sync.actif && sync.code) ? "cloud" : null, code: sync.code || ""};
-  local.set("men.sync", sync);
+
+function migrer(){
+  if(ligues) return;
+  ligues = [];
+  const vieux = local.get("men.sync", null);
+  const vieilleCfg = local.get("men.cfg", null);
+  if(vieux && (vieux.mode || vieux.actif) && vieilleCfg){
+    const estCloud = (vieux.mode === "cloud") || (vieux.actif && vieux.code);
+    const cle = estCloud ? vieux.code : "solo";
+    ligues = [{cle, code: estCloud ? vieux.code : "", mode: estCloud ? "cloud" : "local",
+               nom: vieilleCfg.nom || "Ma ligue"}];
+    courante = cle;
+    local.set("men.cfg."+cle, vieilleCfg);
+    local.set("men.entrees."+cle, local.get("men.entrees", []));
+    local.set("men.moi."+cle, local.get("men.moi", null));
+  }
+  local.set("men.ligues", ligues);
+  local.set("men.courante", courante);
 }
+migrer();
+
+const laLigue = () => ligues.find(l => l.cle === courante) || null;
+
+function majSync(){
+  const l = laLigue();
+  sync = l ? {mode:l.mode, code:l.code} : {mode:null, code:""};
+}
+
+function chargerLigue(cle){
+  courante = cle;
+  local.set("men.courante", cle);
+  cfg = cle ? (local.get("men.cfg."+cle, null) || configDefaut()) : configDefaut();
+  entrees = cle ? local.get("men.entrees."+cle, []) : [];
+  moi = cle ? local.get("men.moi."+cle, null) : null;
+  majSync();
+}
+
+function poserMoi(v){
+  moi = v;
+  if(courante) local.set("men.moi."+courante, v);
+}
+
+function inscrireLigue(l){
+  ligues = ligues.filter(x => x.cle !== l.cle).concat([l]);
+  local.set("men.ligues", ligues);
+}
+
+chargerLigue(courante);
 
 /* ---------- 4. calculs ---------- */
 const JOUR = 86400000;
@@ -634,11 +762,21 @@ function niveau(xp){
 }
 
 /* ---------- 5. persistance + synchro ---------- */
-let cloud = null;              /* { db, docFoyer, colEntrees, methodes } */
+let cloud = null;              /* { db, docFoyer, colEntrees, méthodes } */
+let desabo = [];               /* écouteurs Firestore, à couper au changement de ligue */
+
+function couperSync(){
+  desabo.forEach(f => { try{ f(); }catch(e){} });
+  desabo = [];
+  cloud = null;
+}
 
 function sauverLocal(){
-  local.set("men.cfg", cfg);
-  local.set("men.entrees", entrees.slice(-800));
+  if(!courante) return;
+  local.set("men.cfg."+courante, cfg);
+  local.set("men.entrees."+courante, entrees.slice(-400));
+  const l = laLigue();
+  if(l && cfg.nom && l.nom !== cfg.nom){ l.nom = cfg.nom; local.set("men.ligues", ligues); }
 }
 
 async function ecrireConfig(){
@@ -701,11 +839,11 @@ function lireInvitation(){
 }
 
 function rejoindreLigue(code){
-  sync = {mode:"cloud", code};
-  local.set("men.sync", sync);
-  entrees = [];
-  moi = null; local.set("men.moi", null);
-  sauverLocal();
+  couperSync();
+  if(!ligues.find(l => l.cle === code)){
+    inscrireLigue({cle:code, code, mode:"cloud", nom:"Ligue " + code.slice(0,4)});
+  }
+  chargerLigue(code);
 }
 
 function modaleInvitation(){
@@ -778,15 +916,15 @@ function modaleCreer(){
       const d = new Date(v.querySelector("#cFin").value + "T23:59:59");
       cfg.fin = isNaN(d) ? Date.now() + 7*JOUR : d.getTime();
     }
-    entrees = [];
-    moi = null; local.set("men.moi", null);
-    sync = {mode:"cloud", code:codeLigue()};
-    local.set("men.sync", sync);
+    const code = codeLigue();
+    couperSync();
+    inscrireLigue({cle:code, code, mode:"cloud", nom});
+    courante = code; local.set("men.courante", code);
+    entrees = []; moi = null; majSync();
     sauverLocal();
     fermer();
 
     const att = ouvrir(`<h3>Création en cours…</h3><p class="note">Connexion au serveur.</p>`);
-    cloud = null;
     const r = await brancherSync();
     att.remove();
     rendre();
@@ -819,7 +957,6 @@ function modaleRejoindre(){
     fermer();
     const att = ouvrir(`<h3>Connexion…</h3><p class="note">Recherche de la ligue.</p>`);
     rejoindreLigue(code);
-    cloud = null;
     const r = await brancherSync();
     att.remove();
     rendre();
@@ -832,6 +969,37 @@ function modaleRejoindre(){
       modaleEchec(r);
     }
   };
+}
+
+async function basculer(cle){
+  if(cle === courante) return fermer();
+  sauverLocal();
+  couperSync();
+  chargerLigue(cle);
+  fermer();
+  onglet = "faire";
+  etatSync("off");
+  rendre();
+  if(sync.mode === "cloud"){ await brancherSync(); rendre(); }
+}
+
+function modaleLigues(){
+  const v = ouvrir(`<h3>Mes ligues</h3>` +
+    ligues.map(l => `<div class="duojoueur">
+      <button class="choixjoueur" data-bascule-ligue="${esc(l.cle)}" style="margin:0;flex:1">
+        <span class="marqueur"${l.cle===courante ? ' data-ici="1"' : ""}></span>
+        <span style="min-width:0"><b>${esc(l.nom || "Ligue")}</b>
+          <span style="display:block;font-size:11.5px;color:var(--creme-40)">${l.mode==="cloud" ? esc(l.code) : "sur cet appareil"}</span></span>
+      </button>
+    </div>`).join("") +
+    `<button class="bouton" data-creer="1" style="margin-top:10px">Créer une ligue</button>
+     <button class="bouton fant" data-rejoindre="1" style="margin-top:8px">Rejoindre avec un code</button>`);
+  v.querySelectorAll("[data-bascule-ligue]").forEach(b => b.onclick = () => basculer(b.dataset.basculeLigue));
+  v.querySelectorAll("[data-creer],[data-rejoindre]").forEach(b => b.onclick = () => {
+    const creer = b.hasAttribute("data-creer");
+    fermer();
+    creer ? modaleCreer() : modaleRejoindre();
+  });
 }
 
 function modaleEchec(r){
@@ -878,15 +1046,15 @@ async function brancherSync(){
     const instant = await fs.getDoc(docFoyer);
     if(!instant.exists()) await fs.setDoc(docFoyer, cfg);
 
-    fs.onSnapshot(docFoyer, s=>{
+    desabo.push(fs.onSnapshot(docFoyer, s=>{
       if(s.exists()){ cfg = Object.assign(configDefaut(), s.data()); sauverLocal(); rendre(); }
-    }, e=>etatSync("err", e.message));
+    }, e=>etatSync("err", e.message)));
 
-    fs.onSnapshot(fs.query(colEntrees, fs.orderBy("ts","desc"), fs.limit(200)), s=>{
+    desabo.push(fs.onSnapshot(fs.query(colEntrees, fs.orderBy("ts","desc"), fs.limit(200)), s=>{
       entrees = s.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.ts-b.ts);
       sauverLocal();
       rendre();
-    }, e=>etatSync("err", e.message));
+    }, e=>etatSync("err", e.message)));
 
     etatSync("on","Ligue « "+sync.code+" » synchronisée");
     return {ok:true};
@@ -920,6 +1088,8 @@ function rendre(){
   document.querySelector("nav.onglets").hidden = accueil;
   document.body.classList.toggle("sansonglets", accueil);
   if(accueil){ vue.innerHTML = vueAccueil(); return; }
+  document.getElementById("nomLigue").textContent =
+    (cfg.nom || "Ma ligue") + (ligues.length > 1 ? "   ▾" : "");
   const j = moi ? joueur(moi) : null;
   document.getElementById("pastilleJoueur").innerHTML = j ? portrait(j) : "🙂";
   document.getElementById("nomJoueur").textContent = j ? j.nom : "Choisir";
@@ -1186,7 +1356,7 @@ function modaleJoueurs(){
     </div>`).join("") +
     `<button class="bouton fant" data-modjoueur="nouveau" style="margin-top:6px">Ajouter un joueur</button>`);
   v.querySelectorAll("[data-choix]").forEach(b=>b.onclick = ()=>{
-    moi = b.dataset.choix; local.set("men.moi", moi); fermer(); rendre();
+    poserMoi(b.dataset.choix); fermer(); rendre();
   });
   v.querySelectorAll("[data-modjoueur]").forEach(b=>b.onclick = ()=>{
     fermer(); modaleJoueur(b.dataset.modjoueur);
@@ -1198,7 +1368,7 @@ function modaleJoueur(id){
   const base = nouveau
     ? {id:"j"+Date.now(), nom:"", couleur:COULEURS[cfg.joueurs.length % COULEURS.length]}
     : joueur(id);
-  let a = Object.assign({}, base.av || avatarAuto(base.id));
+  let a = Object.assign({animal:0}, base.av || avatarAuto(base.id));
   let couleur = base.couleur;
 
   const v = ouvrir(`<h3>${nouveau?"Nouveau joueur":"Modifier "+esc(base.nom)}</h3>
@@ -1227,11 +1397,14 @@ function modaleJoueur(id){
         <div class="miroir">${avatarSVG(a, couleur)}</div>
         <button type="button" class="hasard" id="mHasard">🎲 Au hasard</button>
       </div>
-      ${rangee("Teint","peau",PEAUX.length,false)}
-      ${rangee("Coiffure","coif",COIFFURES.length,true)}
-      ${rangee("Couleur de cheveux","coifC",TIGNASSE.length,false)}
+      ${rangee("Espèce","animal",ANIMAUX.length,true)}
+      ${(a.animal||0) > 0
+        ? rangee("Pelage","coifC",TIGNASSE.length,false)
+        : rangee("Teint","peau",PEAUX.length,false)
+          + rangee("Coiffure","coif",COIFFURES.length,true)
+          + rangee("Couleur de cheveux","coifC",TIGNASSE.length,false)}
       ${rangee("Regard","yeux",YEUX.length,true)}
-      ${rangee("Bouche","bouche",BOUCHES.length,true)}
+      ${rangee("Bouche","bouche",(a.animal||0) > 0 ? BOUCHES_BETE.length : BOUCHES.length,true)}
       ${rangee("Accessoire","acc",ACCESSOIRES.length,true)}
       <div class="rayon"><p class="sourcil">Couleur du joueur</p><div class="rangee">` +
         COULEURS.map(c=>`<button class="opt teinte" data-couleur="${c}"
@@ -1261,7 +1434,7 @@ function modaleJoueur(id){
   if(sup) sup.onclick = ()=>{
     if(!confirm("Retirer "+base.nom+" ? Son historique reste dans le journal.")) return;
     cfg.joueurs = cfg.joueurs.filter(x=>x.id!==base.id);
-    if(moi===base.id){ moi = null; local.set("men.moi", null); }
+    if(moi===base.id) poserMoi(null);
     fermer(); ecrireConfig();
   };
 }
@@ -1330,6 +1503,7 @@ function declarer(idTache){
 
 /* ---------- 9. écouteurs ---------- */
 document.getElementById("btnJoueur").onclick = modaleJoueurs;
+document.getElementById("btnLigue").onclick = modaleLigues;
 
 document.querySelector("nav.onglets").addEventListener("click", e=>{
   const b = e.target.closest("[data-onglet]");
@@ -1372,22 +1546,28 @@ vue.addEventListener("click", async e=>{
   if(e.target.closest("[data-rejoindre]") || e.target.id==="btnRejoindre") return modaleRejoindre();
 
   if(e.target.closest("[data-solo]")){
-    sync = {mode:"local", code:""};
-    local.set("men.sync", sync);
+    const cle = "solo-" + Date.now().toString(36);
+    couperSync();
+    inscrireLigue({cle, code:"", mode:"local", nom:"Sur cet appareil"});
+    chargerLigue(cle);
+    cfg.nom = "Sur cet appareil";
+    sauverLocal();
     etatSync("off");
     rendre();
     return;
   }
 
   if(e.target.id==="btnQuitter"){
-    if(!confirm("Quitter « "+cfg.nom+" » ? Tes points restent enregistrés pour les autres joueurs.")) return;
-    cloud = null;
-    sync = {mode:null, code:""};
-    local.set("men.sync", sync);
-    cfg = configDefaut(); entrees = []; moi = null;
-    local.set("men.moi", null); sauverLocal();
+    if(!confirm("Retirer « "+cfg.nom+" » de cet appareil ? Les autres joueurs gardent tout, et tu pourras revenir avec le code.")) return;
+    couperSync();
+    const parti = courante;
+    ligues = ligues.filter(l => l.cle !== parti);
+    local.set("men.ligues", ligues);
+    chargerLigue(ligues.length ? ligues[0].cle : null);
+    onglet = "faire";
     etatSync("off");
     rendre();
+    if(sync.mode === "cloud") brancherSync().then(rendre);
     return;
   }
 
