@@ -854,7 +854,8 @@ function modaleInvitation(){
     w.querySelector("#wCreer").onclick = ()=>{ fermer(); modaleCreer(); };
     return;
   }
-  const lien = location.origin + location.pathname + "#ligue=" + sync.code;
+  const nu = location.origin + location.pathname;
+  const lien = nu + "#ligue=" + sync.code;
   const fichier = location.protocol === "file:";
   const v = ouvrir(`<h3>Inviter quelqu'un</h3>
     ${fichier ? `<div class="rubanhaut">Le jeu est ouvert depuis un fichier local : ce lien ne marchera que sur cet appareil.</div>` : ""}
@@ -867,7 +868,21 @@ function modaleInvitation(){
     </div>
     <p class="sourcil" style="margin-top:16px">Ou dicte le code</p>
     <div style="font-family:var(--display);font-size:23px;letter-spacing:.08em;text-align:center;padding:10px;background:var(--bleu-900);border-radius:10px">${esc(sync.code)}</div>
-    <p class="note">Ce code vaut clé d'entrée : qui l'a peut voir et modifier les scores. Envoie-le en privé.</p>`);
+    <p class="note">Ce code vaut clé d'entrée : qui l'a peut voir et modifier les scores. Envoie-le en privé.</p>
+
+    <p class="sourcil" style="margin-top:22px">Pour qu'ils montent leur propre ligue</p>
+    <p class="note" style="margin:0 0 10px">Envoie plutôt l'adresse nue du jeu : elle ouvre l'écran d'accueil,
+    où chacun crée sa ligue de son côté, sans rejoindre la tienne.</p>
+    <textarea readonly id="mLienNu" style="min-height:52px">${esc(nu)}</textarea>
+    <div style="margin-top:8px"><button class="bouton fant" id="mCopierNu">Copier l'adresse du jeu</button></div>`);
+
+  v.querySelector("#mCopierNu").onclick = async ()=>{
+    const t = v.querySelector("#mLienNu");
+    t.select(); t.setSelectionRange(0, 99999);
+    try{ await navigator.clipboard.writeText(nu); v.querySelector("#mCopierNu").textContent = "Adresse copiée"; }
+    catch(e){ try{ document.execCommand("copy"); v.querySelector("#mCopierNu").textContent = "Adresse copiée"; }
+              catch(e2){ v.querySelector("#mCopierNu").textContent = "Copie manuelle"; } }
+  };
 
   v.querySelector("#mCopier").onclick = async ()=>{
     const t = v.querySelector("#mLien");
@@ -1307,8 +1322,15 @@ function vueReglages(){
       ${cfg.type==="datee" ? `<label class="champ" style="margin-top:12px"><span class="lb">Dernier jour</span>
         <input type="date" id="chFin" value="${cfg.fin ? new Date(cfg.fin).toISOString().slice(0,10) : ""}"></label>` : ""}
       <div style="margin-top:12px"><button class="bouton" id="btnInviter">Inviter quelqu'un</button></div>
-      <div style="margin-top:8px"><button class="bouton danger" id="btnQuitter">Quitter cette ligue</button></div>
-      <p class="note">Quitter n'efface rien pour les autres. Tu pourras revenir avec le même code.</p>
+      <div style="margin-top:8px"><button class="bouton danger" id="btnQuitter">Retirer cette ligue de l'appareil</button></div>
+      <p class="note">Rien n'est effacé pour les autres joueurs. Tu pourras revenir avec le même code.</p>
+    </div>`;
+
+    h += `<div class="plaque"><p class="sourcil">Autres ligues <b>${ligues.length} sur cet appareil</b></p>
+      <p class="note" style="margin:0 0 12px">Tu peux appartenir à plusieurs ligues en même temps : le foyer d'un côté,
+      une semaine entre amis de l'autre. Le nom de la ligue en haut de l'écran permet de basculer de l'une à l'autre.</p>
+      <button class="bouton fant" id="btnCreer">Créer une autre ligue</button>
+      <div style="margin-top:8px"><button class="bouton fant" id="btnRejoindre">Rejoindre avec un code</button></div>
     </div>`;
   }else{
     h += `<div class="plaque"><p class="sourcil">Partie <b>appareil seul</b></p>
