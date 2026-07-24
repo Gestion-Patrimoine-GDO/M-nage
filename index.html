@@ -31,6 +31,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
+  -webkit-text-size-adjust:100%;
   background:var(--bleu-900);
   color:var(--creme);
   font-family:var(--body);
@@ -194,10 +195,10 @@ label.champ{display:block;margin-bottom:12px}
 label.champ .lb{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--creme-40);display:block;margin-bottom:6px}
 input,select,textarea{
   width:100%;background:var(--bleu-900);border:1px solid var(--trait);color:var(--creme);
-  font:inherit;font-size:15px;padding:10px 12px;border-radius:9px;
+  font:inherit;font-size:16px;padding:10px 12px;border-radius:9px;
 }
 input:focus,select:focus,textarea:focus,button:focus-visible,.tuile:focus-visible{outline:2px solid var(--laiton);outline-offset:2px}
-textarea{min-height:88px;font-size:12px;font-family:ui-monospace,monospace;resize:vertical}
+textarea{min-height:88px;font-size:16px;font-family:ui-monospace,monospace;resize:vertical;line-height:1.35}
 .bouton{
   background:var(--creme);color:var(--bleu-900);border:0;border-radius:9px;font:inherit;font-weight:600;
   padding:11px 16px;cursor:pointer;width:100%;font-size:14px;
@@ -218,7 +219,7 @@ textarea{min-height:88px;font-size:12px;font-family:ui-monospace,monospace;resiz
 .item .em{font-size:19px;width:26px;text-align:center}
 .item .lb{flex:1;font-size:13.5px;min-width:0}
 .item .lb small{display:block;color:var(--creme-40);font-size:11px}
-.item .mini{background:none;border:1px solid var(--trait);color:var(--creme-60);border-radius:7px;font:inherit;font-size:11px;padding:5px 9px;cursor:pointer}
+.item .mini,.duojoueur .mini{background:none;border:1px solid var(--trait);color:var(--creme-60);border-radius:8px;font:inherit;font-size:12px;padding:9px 11px;cursor:pointer;min-height:40px}
 
 /* --- avatars --- */
 .pastille{overflow:hidden}
@@ -248,8 +249,23 @@ textarea{min-height:88px;font-size:12px;font-family:ui-monospace,monospace;resiz
 }
 @keyframes monte{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
 .feuille h3{font-size:17px;margin-bottom:14px}
+.duojoueur{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.duojoueur .choixjoueur{margin-bottom:0;flex:1;min-width:0}
+.duojoueur .mini{flex-shrink:0;padding:9px 11px}
 .choixjoueur{display:flex;align-items:center;gap:12px;width:100%;background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);font:inherit;padding:11px;border-radius:11px;margin-bottom:8px;cursor:pointer;text-align:left}
 .choixjoueur .pastille{width:34px;height:34px;border-radius:100px;display:grid;place-items:center;font-size:17px}
+
+/* --- écran d'accueil --- */
+body.sansonglets{padding-bottom:30px}
+[hidden]{display:none !important}
+.accueil{display:flex;flex-direction:column;align-items:center;text-align:center;padding:34px 0 20px}
+.accueil .blason{width:98px;height:98px;border-radius:100px;overflow:hidden;border:2px solid var(--trait);margin-bottom:18px}
+.accueil .blason svg{width:100%;height:100%;display:block}
+.accueil h1{font-size:35px;letter-spacing:-.025em;margin-bottom:10px}
+.accueil .pitch{font-size:14.5px;color:var(--creme-60);max-width:310px;margin:0 0 26px;line-height:1.5}
+.accueil .bouton{max-width:330px;margin-bottom:9px}
+.lienplat{background:none;border:0;color:var(--creme-40);font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:9px;margin-top:4px}
+.duo .bouton[aria-pressed=true]{background:var(--creme);color:var(--bleu-900);border-color:var(--creme)}
 
 /* --- onglets --- */
 nav.onglets{
@@ -315,7 +331,30 @@ const local = {
   }
 };
 
-/* ---------- 2. contenu par défaut ---------- */
+/* ---------- 2. serveur commun ----------
+   Cette clé est publique par nature dans toute app web Firebase : elle désigne le
+   projet, elle n'ouvre aucun droit. La protection vient des règles Firestore. */
+const FIREBASE = {
+  apiKey: "AIzaSyCIlTBelUhYJcOk0pCL7Y2voYO_-8dAvKM",
+  authDomain: "menage-9e7b8.firebaseapp.com",
+  projectId: "menage-9e7b8",
+  storageBucket: "menage-9e7b8.firebasestorage.app",
+  messagingSenderId: "1040976510136",
+  appId: "1:1040976510136:web:38b17274bcc2c6a792084d"
+};
+
+/* codes de ligue : alphabet sans caractères confondables (ni i, l, o, 0, 1) */
+const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+function codeLigue(){
+  const t = new Uint8Array(12);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(t);
+  else for(let i=0;i<12;i++) t[i] = Math.floor(Math.random()*256);
+  const b = [...t].map(n=>ALPHABET[n % ALPHABET.length]).join("");
+  return b.slice(0,4)+"-"+b.slice(4,8)+"-"+b.slice(8,12);
+}
+const codeValide = c => /^[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/.test(c);
+
+/* ---------- 2 bis. contenu par défaut ---------- */
 const COULEURS = ["#E0A83C","#7FB069","#D2452F","#6FA8C7","#C08BC0","#E27D5F","#8FC0A9","#B5A24A"];
 
 /* ---------- atelier d'avatars : tout est dessiné en SVG, viewBox 100×100 ----------
@@ -480,6 +519,9 @@ function configDefaut(){
     taches: TACHES_DEFAUT.map((t,i)=>({
       id:"t"+i, nom:t[0], emoji:t[1], points:t[2], frequence:t[3], categorie:t[4]
     })),
+    nom:"Ma ligue",
+    type:"permanente",
+    fin:0,
     modes:{competition:true, cooperatif:true, rpg:true},
     objectif:500,
     recompense:"Le premier au classement choisit le film du samedi.",
@@ -494,7 +536,11 @@ let entrees = local.get("men.entrees", []);
 let moi = local.get("men.moi", null);
 let onglet = "faire";
 let filtre = "Tout";
-let sync = local.get("men.sync", {actif:false, code:"", firebase:""});
+let sync = local.get("men.sync", {mode:null, code:""});
+if("actif" in sync){   /* migration depuis l'ancienne version */
+  sync = {mode: (sync.actif && sync.code) ? "cloud" : null, code: sync.code || ""};
+  local.set("men.sync", sync);
+}
 
 /* ---------- 4. calculs ---------- */
 const JOUR = 86400000;
@@ -505,6 +551,9 @@ function debutSemaine(d){
   return x.getTime();
 }
 function debutJour(t){ const x=new Date(t); x.setHours(0,0,0,0); return x.getTime(); }
+function debutPeriode(){ return cfg.type==="datee" ? cfg.saison : debutSemaine(); }
+function ligueTerminee(){ return cfg.type==="datee" && cfg.fin && Date.now() > cfg.fin; }
+function motPeriode(){ return cfg.type==="datee" ? "du séjour" : "de la semaine"; }
 function joueur(id){ return cfg.joueurs.find(j=>j.id===id) || {nom:"Inconnu", emoji:"👻", couleur:"#888"}; }
 function tache(id){ return cfg.taches.find(t=>t.id===id); }
 
@@ -625,6 +674,174 @@ async function supprimerEntree(id){
   rendre();
 }
 
+/* un lien d'invitation transporte le nom du foyer et la clé Firebase, rien d'autre */
+const encoder = o => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))))
+  .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const decoder = t => JSON.parse(new TextDecoder().decode(
+  Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/")), c=>c.charCodeAt(0))));
+
+function lireInvitation(){
+  const direct = location.hash.match(/ligue=([a-z0-9\-]+)/i);
+  if(direct){
+    rejoindreLigue(direct[1].toLowerCase());
+    history.replaceState(null, "", location.pathname + location.search);
+    return sync.code;
+  }
+  const ancien = location.hash.match(/rejoindre=([A-Za-z0-9\-_]+)/);
+  if(ancien){
+    try{
+      const d = decoder(ancien[1]);
+      sync = {mode:"cloud", code:d.c};
+      local.set("men.sync", sync);
+      history.replaceState(null, "", location.pathname + location.search);
+      return d.c;
+    }catch(e){ console.warn("Invitation illisible", e); }
+  }
+  return null;
+}
+
+function rejoindreLigue(code){
+  sync = {mode:"cloud", code};
+  local.set("men.sync", sync);
+  entrees = [];
+  moi = null; local.set("men.moi", null);
+  sauverLocal();
+}
+
+function modaleInvitation(){
+  if(sync.mode !== "cloud" || !sync.code){
+    const w = ouvrir(`<h3>Cette partie n'est pas partagée</h3>
+      <p class="note" style="margin-bottom:14px">Le jeu tourne sur cet appareil seulement. Crée une ligue pour jouer à plusieurs.</p>
+      <button class="bouton" id="wCreer">Créer une ligue</button>`);
+    w.querySelector("#wCreer").onclick = ()=>{ fermer(); modaleCreer(); };
+    return;
+  }
+  const lien = location.origin + location.pathname + "#ligue=" + sync.code;
+  const fichier = location.protocol === "file:";
+  const v = ouvrir(`<h3>Inviter quelqu'un</h3>
+    ${fichier ? `<div class="rubanhaut">Le jeu est ouvert depuis un fichier local : ce lien ne marchera que sur cet appareil.</div>` : ""}
+    <p class="note" style="margin:0 0 12px">Envoie ce lien par message. En l'ouvrant, la personne rejoint
+    « ${esc(cfg.nom)} » directement : rien à installer, aucun compte à créer.</p>
+    <textarea readonly id="mLien" style="min-height:64px">${esc(lien)}</textarea>
+    <div class="duo" style="margin-top:10px">
+      <button class="bouton" id="mCopier">Copier le lien</button>
+      ${navigator.share ? `<button class="bouton fant" id="mPartager">Partager</button>` : ""}
+    </div>
+    <p class="sourcil" style="margin-top:16px">Ou dicte le code</p>
+    <div style="font-family:var(--display);font-size:23px;letter-spacing:.08em;text-align:center;padding:10px;background:var(--bleu-900);border-radius:10px">${esc(sync.code)}</div>
+    <p class="note">Ce code vaut clé d'entrée : qui l'a peut voir et modifier les scores. Envoie-le en privé.</p>`);
+
+  v.querySelector("#mCopier").onclick = async ()=>{
+    const t = v.querySelector("#mLien");
+    t.select(); t.setSelectionRange(0, 99999);
+    try{ await navigator.clipboard.writeText(lien); v.querySelector("#mCopier").textContent = "Lien copié"; }
+    catch(e){ try{ document.execCommand("copy"); v.querySelector("#mCopier").textContent = "Lien copié"; }
+              catch(e2){ v.querySelector("#mCopier").textContent = "Copie manuelle"; } }
+  };
+  const pa = v.querySelector("#mPartager");
+  if(pa) pa.onclick = ()=>navigator.share({title:"Ménagerie", text:"Rejoins « "+cfg.nom+" » sur Ménagerie", url:lien}).catch(()=>{});
+}
+
+/* ---------- création et adhésion ---------- */
+function modaleCreer(){
+  const dans7 = new Date(Date.now() + 7*JOUR).toISOString().slice(0,10);
+  const v = ouvrir(`<h3>Créer une ligue</h3>
+    <label class="champ"><span class="lb">Nom de la ligue</span>
+      <input id="cNom" placeholder="Vacances à Pornic" autocomplete="off"></label>
+    <p class="sourcil">Durée</p>
+    <div class="duo" style="margin-bottom:12px">
+      <button class="bouton fant" id="cPerm" aria-pressed="true">Sans fin</button>
+      <button class="bouton fant" id="cDate" aria-pressed="false">Jusqu'à une date</button>
+    </div>
+    <label class="champ" id="cBlocDate" hidden><span class="lb">Dernier jour</span>
+      <input type="date" id="cFin" value="${dans7}"></label>
+    <p class="note" style="margin-bottom:14px">Sans fin, le classement repart chaque lundi. Avec une date, les points
+    s'accumulent sur toute la période et un classement final s'affiche le dernier jour.</p>
+    <button class="bouton" id="cOk">Créer la ligue</button>`);
+
+  let type = "permanente";
+  const maj = ()=>{
+    v.querySelector("#cPerm").setAttribute("aria-pressed", type==="permanente");
+    v.querySelector("#cDate").setAttribute("aria-pressed", type==="datee");
+    v.querySelector("#cBlocDate").hidden = type!=="datee";
+  };
+  v.querySelector("#cPerm").onclick = ()=>{ type="permanente"; maj(); };
+  v.querySelector("#cDate").onclick = ()=>{ type="datee"; maj(); };
+
+  v.querySelector("#cOk").onclick = async ()=>{
+    const nom = v.querySelector("#cNom").value.trim() || "Ma ligue";
+    cfg = configDefaut();
+    cfg.nom = nom;
+    cfg.type = type;
+    cfg.saison = Date.now();
+    if(type==="datee"){
+      const d = new Date(v.querySelector("#cFin").value + "T23:59:59");
+      cfg.fin = isNaN(d) ? Date.now() + 7*JOUR : d.getTime();
+    }
+    entrees = [];
+    moi = null; local.set("men.moi", null);
+    sync = {mode:"cloud", code:codeLigue()};
+    local.set("men.sync", sync);
+    sauverLocal();
+    fermer();
+
+    const att = ouvrir(`<h3>Création en cours…</h3><p class="note">Connexion au serveur.</p>`);
+    cloud = null;
+    const r = await brancherSync();
+    att.remove();
+    rendre();
+
+    if(r && r.ok){
+      const w = ouvrir(`<h3>« ${esc(nom)} » est prête</h3>
+        <p class="note" style="margin-bottom:12px">Code d'accès :</p>
+        <div style="font-family:var(--display);font-size:23px;letter-spacing:.08em;text-align:center;padding:10px;background:var(--bleu-900);border-radius:10px;margin-bottom:14px">${esc(sync.code)}</div>
+        <button class="bouton" id="wInv">Inviter les joueurs</button>
+        <button class="bouton fant" id="wJoueur" style="margin-top:8px">Créer mon avatar</button>`);
+      w.querySelector("#wInv").onclick = ()=>{ fermer(); modaleInvitation(); };
+      w.querySelector("#wJoueur").onclick = ()=>{ fermer(); modaleJoueur("nouveau"); };
+    }else{
+      modaleEchec(r);
+    }
+  };
+}
+
+function modaleRejoindre(){
+  const v = ouvrir(`<h3>Rejoindre une ligue</h3>
+    <label class="champ"><span class="lb">Code reçu, ou lien complet</span>
+      <input id="rCode" placeholder="k7m2-x4p9-b3wq" autocapitalize="none" autocomplete="off"></label>
+    <button class="bouton" id="rOk">Rejoindre</button>
+    <p class="note">Le code figure dans le message d'invitation. Tu peux aussi coller le lien entier, je m'occupe d'en extraire le code.</p>`);
+  v.querySelector("#rOk").onclick = async ()=>{
+    const brut = v.querySelector("#rCode").value.trim().toLowerCase();
+    const m = brut.match(/([a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})/) || brut.match(/ligue=([a-z0-9\-]+)/);
+    const code = m ? m[1] : brut.replace(/[^a-z0-9\-]/g,"");
+    if(code.length < 6){ v.querySelector("#rCode").focus(); return; }
+    fermer();
+    const att = ouvrir(`<h3>Connexion…</h3><p class="note">Recherche de la ligue.</p>`);
+    rejoindreLigue(code);
+    cloud = null;
+    const r = await brancherSync();
+    att.remove();
+    rendre();
+    if(r && r.ok){
+      const w = ouvrir(`<h3>Te voilà dans « ${esc(cfg.nom)} »</h3>
+        <p class="note" style="margin-bottom:14px">Les tâches et le barème sont déjà réglés. Il ne reste qu'à dire qui tu es.</p>
+        <button class="bouton" id="wQui">Choisir mon joueur</button>`);
+      w.querySelector("#wQui").onclick = ()=>{ fermer(); modaleJoueurs(); };
+    }else{
+      modaleEchec(r);
+    }
+  };
+}
+
+function modaleEchec(r){
+  ouvrir(`<h3>Connexion impossible</h3>
+    <div class="rubanhaut">${esc(r ? r.message : "Erreur inconnue")}</div>
+    <p class="note" style="margin-top:12px">Vérifie ta connexion internet et réessaie. Si le problème persiste,
+    tu peux jouer sur cet appareil seul en attendant : les points seront conservés.</p>
+    <button class="bouton" style="margin-top:12px" onclick="this.closest('.voile').remove()">J'ai compris</button>`);
+}
+
 function etatSync(etat, msg){
   const el = document.getElementById("etatsync");
   el.className = "etatsync" + (etat==="on" ? " on" : etat==="err" ? " err" : "");
@@ -633,10 +850,11 @@ function etatSync(etat, msg){
 }
 
 async function brancherSync(){
-  if(!sync.actif || !sync.code || !sync.firebase){ etatSync("off"); return; }
-  let conf;
-  try{ conf = JSON.parse(sync.firebase); }
-  catch(e){ etatSync("err","Configuration Firebase illisible"); return; }
+  if(sync.mode !== "cloud" || !sync.code){
+    etatSync("off");
+    return {ok:false, message:"Aucune ligue sélectionnée."};
+  }
+  const conf = FIREBASE;
   try{
     const v = "https://www.gstatic.com/firebasejs/10.12.5/";
     const [app, auth, fs] = await Promise.all([
@@ -664,15 +882,17 @@ async function brancherSync(){
       if(s.exists()){ cfg = Object.assign(configDefaut(), s.data()); sauverLocal(); rendre(); }
     }, e=>etatSync("err", e.message));
 
-    fs.onSnapshot(fs.query(colEntrees, fs.orderBy("ts","desc"), fs.limit(600)), s=>{
+    fs.onSnapshot(fs.query(colEntrees, fs.orderBy("ts","desc"), fs.limit(200)), s=>{
       entrees = s.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.ts-b.ts);
       sauverLocal();
       rendre();
     }, e=>etatSync("err", e.message));
 
-    etatSync("on","Foyer « "+sync.code+" » synchronisé");
+    etatSync("on","Ligue « "+sync.code+" » synchronisée");
+    return {ok:true};
   }catch(e){
     etatSync("err", e.message);
+    return {ok:false, message:e.message, code:e.code||""};
   }
 }
 
@@ -680,7 +900,26 @@ async function brancherSync(){
 const vue = document.getElementById("vue");
 const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+function vueAccueil(){
+  return `<div class="accueil">
+    <div class="blason">${avatarSVG({peau:0,coif:1,coifC:0,yeux:0,bouche:1,acc:5}, "#E0A83C")}</div>
+    <h1>Ménagerie</h1>
+    <p class="pitch">Déclare ce que tu fais à la maison, marque des points,
+    et regarde qui tient vraiment la baraque.</p>
+    <button class="bouton" data-creer="1">Créer une ligue</button>
+    <button class="bouton fant" data-rejoindre="1">Rejoindre avec un code</button>
+    <button class="lienplat" data-solo="1">Jouer sur cet appareil seulement</button>
+    <p class="note" style="margin-top:22px;max-width:330px">Une ligue, c'est un foyer, une coloc ou une
+    semaine entre amis. Chacun joue depuis son téléphone, les points se mettent à jour chez tout le monde.</p>
+  </div>`;
+}
+
 function rendre(){
+  const accueil = !sync.mode;
+  document.querySelector(".bandeau").hidden = accueil;
+  document.querySelector("nav.onglets").hidden = accueil;
+  document.body.classList.toggle("sansonglets", accueil);
+  if(accueil){ vue.innerHTML = vueAccueil(); return; }
   const j = moi ? joueur(moi) : null;
   document.getElementById("pastilleJoueur").innerHTML = j ? portrait(j) : "🙂";
   document.getElementById("nomJoueur").textContent = j ? j.nom : "Choisir";
@@ -693,7 +932,7 @@ function rendre(){
 
 function vueFaire(){
   let h = "";
-  const sem = debutSemaine();
+  const sem = debutPeriode();
   const t = totaux(sem);
   const somme = Object.values(t).reduce((a,b)=>a+b,0);
 
@@ -701,7 +940,7 @@ function vueFaire(){
     const part = Math.min(100, cfg.objectif ? somme/cfg.objectif*100 : 0);
     const fait = somme >= cfg.objectif;
     h += `<div class="plaque">
-      <p class="sourcil">Objectif de la semaine <b>${fait ? "Atteint" : Math.max(0,cfg.objectif-somme)+" points restants"}</b></p>
+      <p class="sourcil">Objectif ${motPeriode()} <b>${fait ? "Atteint" : Math.max(0,cfg.objectif-somme)+" points restants"}</b></p>
       <div class="jauge ${fait?"atteint":""}"><i style="width:${part}%"></i>
         <u><span>${somme} pts</span><span>${cfg.objectif}</span></u></div>
       ${cfg.recompense ? `<p class="recompense">${fait?"Débloqué":"À la clé"} : <b>${esc(cfg.recompense)}</b></p>` : ""}
@@ -710,7 +949,7 @@ function vueFaire(){
 
   if(cfg.modes.competition && cfg.joueurs.length>1){
     const max = Math.max(1, ...Object.values(t));
-    h += `<div class="plaque"><p class="sourcil">Course de la semaine</p><div class="course">` +
+    h += `<div class="plaque"><p class="sourcil">${ligueTerminee() ? "Classement final" : "Course "+motPeriode()}</p><div class="course">` +
       cfg.joueurs.map(j=>`<div class="piste">
         <span class="pastille">${portrait(j)}</span>
         <span class="nom">${esc(j.nom)}</span>
@@ -728,7 +967,15 @@ function vueFaire(){
     </div>`;
   }
 
-  if(!moi){
+  const neuf = cfg.joueurs.some(j=>/^Joueur \d+$/.test(j.nom));
+  if(neuf){
+    h += `<div class="plaque" style="border-color:rgba(224,168,60,.45)">
+      <p class="sourcil">Première partie</p>
+      <p style="margin:0 0 12px;font-size:14px">Chacun choisit son prénom et compose son avatar : teint, coiffure, regard, accessoires.
+      Ensuite, déclarer une tâche tient en un appui.</p>
+      <button class="bouton" data-ouvrirjoueurs="1">Créer les joueurs</button>
+    </div>`;
+  }else if(!moi){
     h += `<div class="rubanhaut">Choisis qui tu es en haut à droite avant de déclarer une tâche.</div>`;
   }
 
@@ -767,10 +1014,20 @@ function vueFaire(){
 }
 
 function vueTableau(){
-  const sem = totaux(debutSemaine());
+  const sem = totaux(debutPeriode());
   const sai = totaux(cfg.saison);
   const classe = [...cfg.joueurs].sort((a,b)=>sem[b.id]-sem[a.id]);
-  let h = `<div class="plaque"><p class="sourcil">Semaine en cours <b>${new Date(debutSemaine()).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} → aujourd'hui</b></p>`;
+  let h = "";
+  if(ligueTerminee()){
+    const gagnant = [...cfg.joueurs].sort((a,b)=>sem[b.id]-sem[a.id])[0];
+    h += `<div class="plaque" style="border-color:rgba(224,168,60,.5);text-align:center">
+      <p class="sourcil" style="justify-content:center">${esc(cfg.nom)} · terminée</p>
+      <div style="width:78px;height:78px;border-radius:100px;overflow:hidden;margin:4px auto 10px">${portrait(gagnant)}</div>
+      <p style="font-family:var(--display);font-size:20px;margin:0">${esc(gagnant.nom)} l'emporte</p>
+      <p class="note" style="margin-top:4px">${sem[gagnant.id]} points du ${new Date(cfg.saison).toLocaleDateString("fr-FR")} au ${new Date(cfg.fin).toLocaleDateString("fr-FR")}</p>
+    </div>`;
+  }
+  h += `<div class="plaque"><p class="sourcil">${cfg.type==="datee" ? "Séjour en cours" : "Semaine en cours"} <b>${new Date(debutPeriode()).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} → ${cfg.type==="datee" && cfg.fin ? new Date(cfg.fin).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}) : "aujourd'hui"}</b></p>`;
   h += classe.map((j,i)=>{
     const st = statsJoueur(j.id), nv = niveau(sai[j.id]);
     return `<div class="rang ${i===0&&sem[j.id]>0?"tete":""}">
@@ -857,7 +1114,7 @@ function vueReglages(){
     cfg.joueurs.map(j=>`<div class="item">
       <span class="pastille" style="width:32px;height:32px;border-radius:100px;flex-shrink:0">${portrait(j)}</span>
       <span class="lb">${esc(j.nom)}<small>${statsJoueur(j.id).total} tâches déclarées</small></span>
-      <button class="mini" data-modjoueur="${j.id}">Modifier</button>
+      <button class="mini" data-modjoueur="${j.id}">Avatar et prénom</button>
     </div>`).join("") +
     `<div style="margin-top:12px"><button class="bouton fant" data-modjoueur="nouveau">Ajouter un joueur</button></div></div>`;
 
@@ -870,15 +1127,27 @@ function vueReglages(){
     `<div style="margin-top:12px"><button class="bouton fant" data-modtache="nouvelle">Ajouter une tâche</button></div>
      <p class="note">Une tâche en retard rapporte 1,5 fois ses points : c'est le moteur du jeu, il pousse vers ce que personne ne fait.</p></div>`;
 
-  h += `<div class="plaque"><p class="sourcil">Synchronisation <b>${cloud ? "active" : "locale"}</b></p>
-    ${bascule("sync","Partager entre appareils","Chacun son téléphone, mise à jour instantanée.",sync.actif)}
-    <label class="champ" style="margin-top:12px"><span class="lb">Nom du foyer</span>
-      <input type="text" id="chCode" value="${esc(sync.code)}" placeholder="bayle-pontrieux" autocapitalize="none"></label>
-    <label class="champ"><span class="lb">Configuration Firebase (JSON)</span>
-      <textarea id="chFirebase" spellcheck="false" placeholder='{"apiKey":"…","authDomain":"…","projectId":"…","appId":"…"}'>${esc(sync.firebase)}</textarea></label>
-    <button class="bouton" id="btnSync">Enregistrer et connecter</button>
-    <p class="note">Sans configuration, tout reste sur cet appareil. La marche à suivre pour créer le projet Firebase est dans le fichier <code>INSTALLATION.md</code>.</p>
-  </div>`;
+  if(sync.mode === "cloud"){
+    h += `<div class="plaque"><p class="sourcil">Ligue <b>${cloud ? "connectée" : "hors ligne"}</b></p>
+      <label class="champ"><span class="lb">Nom de la ligue</span>
+        <input type="text" id="chNomLigue" value="${esc(cfg.nom||"")}"></label>
+      <label class="champ"><span class="lb">Code d'accès</span>
+        <input type="text" value="${esc(sync.code)}" readonly></label>
+      ${bascule("datee","Ligue à durée limitée","Classement final à la date choisie, au lieu d'un classement chaque lundi.",cfg.type==="datee")}
+      ${cfg.type==="datee" ? `<label class="champ" style="margin-top:12px"><span class="lb">Dernier jour</span>
+        <input type="date" id="chFin" value="${cfg.fin ? new Date(cfg.fin).toISOString().slice(0,10) : ""}"></label>` : ""}
+      <div style="margin-top:12px"><button class="bouton" id="btnInviter">Inviter quelqu'un</button></div>
+      <div style="margin-top:8px"><button class="bouton danger" id="btnQuitter">Quitter cette ligue</button></div>
+      <p class="note">Quitter n'efface rien pour les autres. Tu pourras revenir avec le même code.</p>
+    </div>`;
+  }else{
+    h += `<div class="plaque"><p class="sourcil">Partie <b>appareil seul</b></p>
+      <p class="note" style="margin:0 0 12px">Les points restent sur cet appareil. Crée une ligue pour que
+      chacun joue depuis son propre téléphone.</p>
+      <button class="bouton" id="btnCreer">Créer une ligue</button>
+      <div style="margin-top:8px"><button class="bouton fant" id="btnRejoindre">Rejoindre avec un code</button></div>
+    </div>`;
+  }
 
   h += `<div class="plaque"><p class="sourcil">Saison et sauvegarde</p>
     <div class="duo" style="margin-bottom:8px">
@@ -909,11 +1178,18 @@ const fermer = () => document.querySelectorAll(".voile").forEach(v=>v.remove());
 
 function modaleJoueurs(){
   const v = ouvrir(`<h3>Qui déclare ?</h3>` + cfg.joueurs.map(j=>
-    `<button class="choixjoueur" data-choix="${j.id}">
-      <span class="pastille">${portrait(j)}</span>
-      <span><b>${esc(j.nom)}</b></span></button>`).join(""));
+    `<div class="duojoueur">
+      <button class="choixjoueur" data-choix="${j.id}">
+        <span class="pastille">${portrait(j)}</span>
+        <span><b>${esc(j.nom)}</b></span></button>
+      <button class="mini" data-modjoueur="${j.id}">Avatar</button>
+    </div>`).join("") +
+    `<button class="bouton fant" data-modjoueur="nouveau" style="margin-top:6px">Ajouter un joueur</button>`);
   v.querySelectorAll("[data-choix]").forEach(b=>b.onclick = ()=>{
     moi = b.dataset.choix; local.set("men.moi", moi); fermer(); rendre();
+  });
+  v.querySelectorAll("[data-modjoueur]").forEach(b=>b.onclick = ()=>{
+    fermer(); modaleJoueur(b.dataset.modjoueur);
   });
 }
 
@@ -1079,11 +1355,10 @@ vue.addEventListener("click", async e=>{
   const bs = e.target.closest("[data-bascule]");
   if(bs){
     const c = bs.dataset.bascule;
-    if(c==="sync"){
-      sync.actif = !sync.actif;
-      local.set("men.sync", sync);
-      rendre();
-      if(sync.actif) brancherSync(); else { cloud = null; etatSync("off"); }
+    if(c==="datee"){
+      cfg.type = cfg.type==="datee" ? "permanente" : "datee";
+      if(cfg.type==="datee" && !cfg.fin) cfg.fin = Date.now() + 7*JOUR;
+      ecrireConfig();
     }else{
       cfg.modes[c] = !cfg.modes[c];
       ecrireConfig();
@@ -1091,13 +1366,27 @@ vue.addEventListener("click", async e=>{
     return;
   }
 
-  if(e.target.id==="btnSync"){
-    sync.code = document.getElementById("chCode").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"-");
-    sync.firebase = document.getElementById("chFirebase").value.trim();
-    sync.actif = true;
+  if(e.target.closest("[data-ouvrirjoueurs]")) return modaleJoueurs();
+  if(e.target.id==="btnInviter") return modaleInvitation();
+  if(e.target.closest("[data-creer]") || e.target.id==="btnCreer") return modaleCreer();
+  if(e.target.closest("[data-rejoindre]") || e.target.id==="btnRejoindre") return modaleRejoindre();
+
+  if(e.target.closest("[data-solo]")){
+    sync = {mode:"local", code:""};
     local.set("men.sync", sync);
+    etatSync("off");
+    rendre();
+    return;
+  }
+
+  if(e.target.id==="btnQuitter"){
+    if(!confirm("Quitter « "+cfg.nom+" » ? Tes points restent enregistrés pour les autres joueurs.")) return;
     cloud = null;
-    await brancherSync();
+    sync = {mode:null, code:""};
+    local.set("men.sync", sync);
+    cfg = configDefaut(); entrees = []; moi = null;
+    local.set("men.moi", null); sauverLocal();
+    etatSync("off");
     rendre();
     return;
   }
@@ -1139,6 +1428,11 @@ vue.addEventListener("click", async e=>{
 vue.addEventListener("change", e=>{
   if(e.target.id==="chObjectif"){ cfg.objectif = Math.max(0, +e.target.value||0); ecrireConfig(); }
   if(e.target.id==="chRecompense"){ cfg.recompense = e.target.value; ecrireConfig(); }
+  if(e.target.id==="chNomLigue"){ cfg.nom = e.target.value.trim() || "Ma ligue"; ecrireConfig(); }
+  if(e.target.id==="chFin"){
+    const d2 = new Date(e.target.value + "T23:59:59");
+    if(!isNaN(d2)){ cfg.fin = d2.getTime(); ecrireConfig(); }
+  }
 });
 
 /* ---------- 10. manifeste PWA embarqué ---------- */
@@ -1166,9 +1460,20 @@ vue.addEventListener("change", e=>{
 })();
 
 /* ---------- 11. démarrage ---------- */
+const ligueRejointe = lireInvitation();
 etatSync("off");
 rendre();
-if(sync.actif) brancherSync();
+if(sync.mode === "cloud"){
+  brancherSync().then(r=>{
+    rendre();
+    if(!ligueRejointe) return;
+    const v = ouvrir(`<h3>Te voilà dans « ${esc(cfg.nom)} »</h3>
+      <p class="note" style="margin-bottom:14px">Les tâches, le barème et l'objectif sont déjà réglés
+      par la personne qui t'a invité. Il ne reste qu'à dire qui tu es.</p>
+      <button class="bouton" id="bChoix">Choisir mon joueur</button>`);
+    v.querySelector("#bChoix").onclick = ()=>{ fermer(); modaleJoueurs(); };
+  });
+}
 /* la quête et les retards changent avec l'heure : rafraîchir de temps en temps */
 setInterval(()=>{ if(onglet==="faire") rendre(); }, 300000);
 </script>
