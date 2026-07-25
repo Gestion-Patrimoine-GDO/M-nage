@@ -275,6 +275,21 @@ textarea{min-height:88px;font-size:16px;font-family:ui-monospace,monospace;resiz
 .choixjoueur{display:flex;align-items:center;gap:12px;width:100%;background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);font:inherit;padding:11px;border-radius:11px;margin-bottom:8px;cursor:pointer;text-align:left}
 .choixjoueur .pastille{width:34px;height:34px;border-radius:100px;display:grid;place-items:center;font-size:17px}
 
+/* --- bannière d'installation --- */
+.bandeauInstall{
+  position:fixed;left:10px;right:10px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:40;
+  max-width:540px;margin:0 auto;display:flex;align-items:center;gap:11px;
+  background:var(--bleu-800);border:1px solid var(--trait);border-radius:14px;padding:11px 12px;
+  box-shadow:0 12px 30px -10px rgba(5,20,25,.7);animation:monte .3s cubic-bezier(.2,.9,.3,1);
+}
+body.sansonglets .bandeauInstall{bottom:calc(16px + env(safe-area-inset-bottom))}
+.bandeauInstall .ic{font-size:24px}
+.bandeauInstall .txt{flex:1;min-width:0}
+.bandeauInstall .txt b{display:block;font-size:14px}
+.bandeauInstall .txt span{font-size:11.5px;color:var(--creme-60);line-height:1.35}
+.bandeauInstall .poser{background:var(--laiton);color:var(--bleu-900);border:0;border-radius:9px;font:inherit;font-weight:600;font-size:13px;padding:9px 14px;cursor:pointer;flex-shrink:0}
+.bandeauInstall .fermerInstall{background:none;border:0;color:var(--creme-40);font-size:15px;cursor:pointer;flex-shrink:0;padding:4px 6px}
+
 /* --- écran d'accueil --- */
 body.sansonglets{padding-bottom:30px}
 [hidden]{display:none !important}
@@ -662,6 +677,11 @@ migrer();
 
 const laLigue = () => ligues.find(l => l.cle === courante) || null;
 
+/* Mon identité par défaut, partagée entre toutes les ligues : créée une fois,
+   proposée dès que je rejoins ou crée une ligue. */
+function monIdentite(){ return local.get("men.identite", null); }
+function poserIdentite(j){ local.set("men.identite", {nom:j.nom, av:j.av, couleur:j.couleur}); }
+
 function majSync(){
   const l = laLigue();
   sync = l ? {mode:l.mode, code:l.code} : {mode:null, code:""};
@@ -994,10 +1014,18 @@ function modaleRejoindre(){
     fermer();
     rendre();
     if(r && r.ok){
+      const ident = monIdentite();
       const w = ouvrir(`<h3>Te voilà dans « ${esc(cfg.nom)} »</h3>
-        <p class="note" style="margin-bottom:14px">Les tâches et le barème sont déjà réglés. Il ne reste qu'à dire qui tu es.</p>
-        <button class="bouton" id="wQui">Choisir mon joueur</button>`);
-      w.querySelector("#wQui").onclick = ()=>{ fermer(); modaleJoueurs(); };
+        <p class="note" style="margin-bottom:14px">${ident
+          ? "Tu rejoins avec ton personnage habituel, "+esc(ident.nom)+"."
+          : "Les tâches et le barème sont déjà réglés. Il ne reste qu'à créer ton personnage."}</p>
+        <div style="display:flex;justify-content:center;margin-bottom:14px">${ident
+          ? `<span class="pastille" style="width:76px;height:76px;border-radius:100px">${avatarSVG(ident.av, ident.couleur)}</span>` : ""}</div>
+        <button class="bouton" id="wQui">${ident ? "C'est parti" : "Créer mon personnage"}</button>
+        ${ident ? `<button class="bouton fant" id="wAutre" style="margin-top:8px">Choisir un autre personnage</button>` : ""}`);
+      w.querySelector("#wQui").onclick = ()=>{ fermer(); rejoindreCommeMoi(); };
+      const wa = w.querySelector("#wAutre");
+      if(wa) wa.onclick = ()=>{ fermer(); modaleJoueurs(); };
     }else{
       modaleEchec(r);
     }
@@ -1139,26 +1167,45 @@ function vueFaire(){
   const t = totaux(sem);
   const somme = Object.values(t).reduce((a,b)=>a+b,0);
 
-  if(cfg.modes.cooperatif){
-    const part = Math.min(100, cfg.objectif ? somme/cfg.objectif*100 : 0);
-    const fait = somme >= cfg.objectif;
-    h += `<div class="plaque">
-      <p class="sourcil">Objectif ${motPeriode()} <b>${fait ? "Atteint" : Math.max(0,cfg.objectif-somme)+" points restants"}</b></p>
-      <div class="jauge ${fait?"atteint":""}"><i style="width:${part}%"></i>
-        <u><span>${somme} pts</span><span>${cfg.objectif}</span></u></div>
-      ${cfg.recompense ? `<p class="recompense">${fait?"Débloqué":"À la clé"} : <b>${esc(cfg.recompense)}</b></p>` : ""}
-    </div>`;
-  }
+  const classe = [...cfg.joueurs].sort((x,y)=>t[y.id]-t[x.id]);
+  const meneur = classe[0];
+  const objectifAtteint = cfg.modes.cooperatif && cfg.objectif && somme >= cfg.objectif;
 
-  if(cfg.modes.competition && cfg.joueurs.length>1){
-    const max = Math.max(1, ...Object.values(t));
-    h += `<div class="plaque"><p class="sourcil">${ligueTerminee() ? "Classement final" : "Course "+motPeriode()}</p><div class="course">` +
-      cfg.joueurs.map(j=>`<div class="piste">
-        <span class="pastille">${portrait(j)}</span>
-        <span class="nom">${esc(j.nom)}</span>
-        <span class="barre"><i style="width:${t[j.id]/max*100}%;background:${j.couleur}"></i></span>
-        <span class="pts">${t[j.id]}<small> pts</small></span>
-      </div>`).join("") + `</div></div>`;
+  /* Un seul bloc : on coopère pour remplir la jauge commune, et celui qui a le plus
+     porté l'effort est mis à l'honneur. La course n'est plus un jeu séparé mais la
+     lecture de qui contribue le plus au but commun. */
+  if(cfg.modes.cooperatif || (cfg.modes.competition && cfg.joueurs.length>1)){
+    h += `<div class="plaque">`;
+
+    if(cfg.modes.cooperatif){
+      const part = Math.min(100, cfg.objectif ? somme/cfg.objectif*100 : 0);
+      h += `<p class="sourcil">Objectif ${motPeriode()}
+        <b>${objectifAtteint ? "Atteint 🎉" : Math.max(0,cfg.objectif-somme)+" pts restants"}</b></p>
+        <div class="jauge ${objectifAtteint?"atteint":""}"><i style="width:${part}%"></i>
+          <u><span>${somme} pts</span><span>${cfg.objectif}</span></u></div>`;
+      if(cfg.recompense){
+        h += `<p class="recompense">${objectifAtteint?"Débloqué":"À la clé"} : <b>${esc(cfg.recompense)}</b></p>`;
+      }
+      if(objectifAtteint && cfg.modes.competition && meneur && t[meneur.id]>0){
+        h += `<p class="recompense" style="margin-top:6px">Plus gros contributeur :
+          <b>${esc(meneur.nom)}</b>, ${t[meneur.id]} points.</p>`;
+      }
+    }
+
+    if(cfg.modes.competition && cfg.joueurs.length>1){
+      const max = Math.max(1, ...Object.values(t));
+      h += `<p class="sourcil" style="margin-top:${cfg.modes.cooperatif?"16px":"0"}">
+        ${ligueTerminee() ? "Classement final" : cfg.modes.cooperatif ? "Qui contribue le plus" : "Course "+motPeriode()}</p>
+        <div class="course">` +
+        classe.map((j,i)=>`<div class="piste">
+          <span class="pastille">${portrait(j)}</span>
+          <span class="nom">${esc(j.nom)}${i===0&&t[j.id]>0?" 👑":""}</span>
+          <span class="barre"><i style="width:${t[j.id]/max*100}%;background:${j.couleur}"></i></span>
+          <span class="pts">${t[j.id]}<small> pts</small></span>
+        </div>`).join("") + `</div>`;
+    }
+
+    h += `</div>`;
   }
 
   const q = queteDuJour();
@@ -1441,10 +1488,24 @@ function modaleJoueurs(){
   });
 }
 
+function rejoindreCommeMoi(){
+  const ident = monIdentite();
+  if(!ident){ modaleJoueur("nouveau"); return; }
+  const existant = cfg.joueurs.find(j => j.nom.toLowerCase() === ident.nom.toLowerCase());
+  if(existant){ poserMoi(existant.id); rendre(); return; }
+  const j = {id:"j"+Date.now(), nom:ident.nom, av:ident.av, couleur:ident.couleur, emoji:"🙂"};
+  cfg.joueurs = [...cfg.joueurs, j];
+  poserMoi(j.id);
+  ecrireConfig();
+}
+
 function modaleJoueur(id){
   const nouveau = id==="nouveau";
+  const ident = monIdentite();
   const base = nouveau
-    ? {id:"j"+Date.now(), nom:"", couleur:COULEURS[cfg.joueurs.length % COULEURS.length]}
+    ? (ident
+        ? {id:"j"+Date.now(), nom:ident.nom, couleur:ident.couleur, av:ident.av}
+        : {id:"j"+Date.now(), nom:"", couleur:COULEURS[cfg.joueurs.length % COULEURS.length]})
     : joueur(id);
   let a = Object.assign({animal:0}, base.av || avatarAuto(base.id));
   let couleur = base.couleur;
@@ -1505,6 +1566,13 @@ function modaleJoueur(id){
     if(!nom){ champ.focus(); return; }
     const maj = {id:base.id, nom, couleur, av:a, emoji:base.emoji || "🙂"};
     cfg.joueurs = nouveau ? [...cfg.joueurs, maj] : cfg.joueurs.map(x=>x.id===base.id?maj:x);
+    /* Cette apparence devient mon identité de référence si : j'édite mon propre
+       personnage ; ou je crée/édite un personnage alors que je n'ai pas encore
+       d'identité sur cet appareil (typiquement le premier joueur d'une ligue). */
+    if(moi === base.id || !monIdentite()){
+      poserIdentite(maj);
+      if(!moi) poserMoi(maj.id);
+    }
     fermer(); ecrireConfig();
   };
 
@@ -1569,6 +1637,7 @@ function tamponner(points, libelle){
 
 function declarer(idTache){
   if(!moi){ modaleJoueurs(); return; }
+  if(!dejaInstalle) setTimeout(proposerInstall, 1200);
   const t = tache(idTache);
   if(!t) return;
   const c = calculPoints(t);
@@ -1717,6 +1786,73 @@ vue.addEventListener("change", e=>{
   }catch(e){}
 })();
 
+/* ---------- 10 bis. proposer l'installation sur l'écran d'accueil ---------- */
+const dejaInstalle =
+  (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+  || window.navigator.standalone === true;
+let promptInstall = null;
+
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  promptInstall = e;
+  proposerInstall();
+});
+
+function estIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+    && !/crios|fxios/i.test(navigator.userAgent);  /* Safari uniquement gère l'ajout */
+}
+
+function proposerInstall(){
+  if(dejaInstalle) return;
+  if(local.get("men.installRefuse", 0) > Date.now()) return;
+  if(document.querySelector(".bandeauInstall")) return;
+  /* on n'insiste pas dès la première seconde : seulement une fois la personne engagée */
+  if(!courante) return;
+
+  const b = document.createElement("div");
+  b.className = "bandeauInstall";
+  b.innerHTML = `<span class="ic">📲</span>
+    <span class="txt"><b>Installer Ménagerie</b><span>Comme une vraie app, en plein écran, accessible d'un geste.</span></span>
+    <button class="poser" id="iInstall">Installer</button>
+    <button class="fermerInstall" id="iPlus" aria-label="Plus tard">✕</button>`;
+  document.body.appendChild(b);
+
+  b.querySelector("#iPlus").onclick = ()=>{
+    local.set("men.installRefuse", Date.now() + 7*JOUR);  /* on ne redemande pas avant une semaine */
+    b.remove();
+  };
+  b.querySelector("#iInstall").onclick = async ()=>{
+    if(promptInstall){
+      b.remove();
+      promptInstall.prompt();
+      try{ await promptInstall.userChoice; }catch(e){}
+      promptInstall = null;
+    }else if(estIOS()){
+      b.remove();
+      ouvrir(`<h3>Ajouter à l'écran d'accueil</h3>
+        <p class="note" style="margin-bottom:14px">Sur iPhone, deux gestes dans Safari :</p>
+        <div class="item"><span class="em">1</span><span class="lb">Touche le bouton Partager en bas de l'écran
+          <small>le carré avec une flèche vers le haut</small></span></div>
+        <div class="item"><span class="em">2</span><span class="lb">Choisis « Sur l'écran d'accueil »
+          <small>fais défiler un peu si tu ne le vois pas tout de suite</small></span></div>
+        <p class="note" style="margin-top:12px">Ménagerie apparaîtra alors avec son icône, comme n'importe quelle application.</p>
+        <button class="bouton" style="margin-top:8px" onclick="fermer()">C'est fait</button>`);
+    }else{
+      b.remove();
+      ouvrir(`<h3>Ajouter à l'écran d'accueil</h3>
+        <p class="note" style="margin-bottom:12px">Dans le menu de ton navigateur (les trois points),
+        cherche « Installer l'application » ou « Ajouter à l'écran d'accueil ».</p>
+        <button class="bouton" onclick="fermer()">C'est compris</button>`);
+    }
+  };
+}
+
+/* sur iPhone il n'y a pas d'évènement beforeinstallprompt : on propose nous-mêmes */
+if(estIOS() && !dejaInstalle){
+  setTimeout(proposerInstall, 4000);
+}
+
 /* ---------- 11. démarrage ---------- */
 const ligueRejointe = lireInvitation();
 etatSync("off");
@@ -1725,11 +1861,18 @@ if(sync.mode === "cloud"){
   brancherSync().then(r=>{
     rendre();
     if(!ligueRejointe) return;
+    const ident = monIdentite();
     const v = ouvrir(`<h3>Te voilà dans « ${esc(cfg.nom)} »</h3>
-      <p class="note" style="margin-bottom:14px">Les tâches, le barème et l'objectif sont déjà réglés
-      par la personne qui t'a invité. Il ne reste qu'à dire qui tu es.</p>
-      <button class="bouton" id="bChoix">Choisir mon joueur</button>`);
-    v.querySelector("#bChoix").onclick = ()=>{ fermer(); modaleJoueurs(); };
+      <p class="note" style="margin-bottom:14px">${ident
+        ? "Tu rejoins avec ton personnage habituel, "+esc(ident.nom)+"."
+        : "Les tâches et le barème sont déjà réglés par la personne qui t'a invité. Il ne reste qu'à créer ton personnage."}</p>
+      <div style="display:flex;justify-content:center;margin-bottom:14px">${ident
+        ? `<span class="pastille" style="width:76px;height:76px;border-radius:100px">${avatarSVG(ident.av, ident.couleur)}</span>` : ""}</div>
+      <button class="bouton" id="bChoix">${ident ? "C'est parti" : "Créer mon personnage"}</button>
+      ${ident ? `<button class="bouton fant" id="bAutre" style="margin-top:8px">Choisir un autre personnage</button>` : ""}`);
+    v.querySelector("#bChoix").onclick = ()=>{ fermer(); rejoindreCommeMoi(); };
+    const ba = v.querySelector("#bAutre");
+    if(ba) ba.onclick = ()=>{ fermer(); modaleJoueurs(); };
   });
 }
 /* la quête et les retards changent avec l'heure : rafraîchir de temps en temps */
