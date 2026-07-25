@@ -302,6 +302,26 @@ body.sansonglets{padding-bottom:30px}
 .lienplat{background:none;border:0;color:var(--creme-40);font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:9px;margin-top:4px}
 .duo .bouton[aria-pressed=true]{background:var(--creme);color:var(--bleu-900);border-color:var(--creme)}
 
+/* --- sélecteur de ligues --- */
+.listeligues{
+  max-height:52vh;overflow-y:auto;overscroll-behavior:contain;
+  margin:0 -4px;padding:0 4px;display:flex;flex-direction:column;gap:8px;
+}
+.choixligue{
+  display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  background:var(--bleu-800);border:1px solid var(--trait);color:var(--creme);
+  font:inherit;padding:12px;border-radius:11px;cursor:pointer;min-height:56px;
+}
+.choixligue.active{border-color:var(--vert);background:rgba(127,176,107,.1)}
+.choixligue .ici{
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--vert);
+  border:1px solid rgba(127,176,107,.5);border-radius:100px;padding:3px 8px;flex-shrink:0;
+}
+.actionsligues{
+  position:sticky;bottom:0;padding-top:14px;margin-top:4px;
+  background:linear-gradient(transparent, var(--bleu-850) 22%);
+}
+
 /* --- onglets --- */
 nav.onglets{
   position:fixed;left:0;right:0;bottom:0;z-index:30;
@@ -1045,16 +1065,20 @@ async function basculer(cle){
 }
 
 function modaleLigues(){
-  const v = ouvrir(`<h3>Mes ligues</h3>` +
-    ligues.map(l => `<div class="duojoueur">
-      <button class="choixjoueur" data-bascule-ligue="${esc(l.cle)}" style="margin:0;flex:1">
+  const active = laLigue();
+  const v = ouvrir(`<h3>Mes ligues <span style="font-family:var(--body);font-weight:400;font-size:13px;color:var(--creme-40)">${ligues.length}</span></h3>
+    <div class="listeligues">` +
+    ligues.map(l => `<button class="choixligue${l.cle===courante ? " active" : ""}" data-bascule-ligue="${esc(l.cle)}">
         <span class="marqueur"${l.cle===courante ? ' data-ici="1"' : ""}></span>
-        <span style="min-width:0"><b>${esc(l.nom || "Ligue")}</b>
+        <span style="min-width:0;flex:1"><b>${esc(l.nom || "Ligue")}</b>
           <span style="display:block;font-size:11.5px;color:var(--creme-40)">${l.mode==="cloud" ? esc(l.code) : "sur cet appareil"}</span></span>
-      </button>
-    </div>`).join("") +
-    `<button class="bouton" data-creer="1" style="margin-top:10px">Créer une ligue</button>
-     <button class="bouton fant" data-rejoindre="1" style="margin-top:8px">Rejoindre avec un code</button>`);
+        ${l.cle===courante ? '<span class="ici">ici</span>' : ""}
+      </button>`).join("") +
+    `</div>
+    <div class="actionsligues">
+      <button class="bouton" data-creer="1">Créer une ligue</button>
+      <button class="bouton fant" data-rejoindre="1" style="margin-top:8px">Rejoindre avec un code</button>
+    </div>`);
   v.querySelectorAll("[data-bascule-ligue]").forEach(b => b.onclick = () => basculer(b.dataset.basculeLigue));
   v.querySelectorAll("[data-creer],[data-rejoindre]").forEach(b => b.onclick = () => {
     const creer = b.hasAttribute("data-creer");
@@ -1149,8 +1173,13 @@ function rendre(){
   document.querySelector("nav.onglets").hidden = accueil;
   document.body.classList.toggle("sansonglets", accueil);
   if(accueil){ vue.innerHTML = vueAccueil(); return; }
-  document.getElementById("nomLigue").textContent =
-    (cfg.nom || "Ma ligue") + (ligues.length > 1 ? "   ▾" : "");
+  const nl = document.getElementById("nomLigue");
+  if(ligues.length > 1){
+    nl.innerHTML = esc(cfg.nom || "Ma ligue") +
+      ` <span style="display:inline-block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--laiton);border:1px solid rgba(224,168,60,.5);border-radius:100px;padding:1px 6px;margin-left:4px;vertical-align:middle">${ligues.length} ligues ▾</span>`;
+  }else{
+    nl.textContent = cfg.nom || "Le tableau d'honneur du foyer";
+  }
   const j = moi ? joueur(moi) : null;
   document.getElementById("pastilleJoueur").innerHTML = j ? portrait(j) : "🙂";
   document.getElementById("nomJoueur").textContent = j ? j.nom : "Choisir";
